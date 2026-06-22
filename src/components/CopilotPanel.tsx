@@ -16,7 +16,7 @@ export default function CopilotPanel({ activeRegion, persona, userLocation }: Co
   const [loading, setLoading] = useState(false);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Set welcome message dynamically based on geolocated city
   useEffect(() => {
@@ -34,7 +34,12 @@ How can I help you analyze trends or allocate resources in this sector today?`,
   }, [userLocation.city]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages, loading]);
 
   const getSuggestions = () => {
@@ -134,7 +139,7 @@ How can I help you analyze trends or allocate resources in this sector today?`,
       </div>
 
       {/* Chat Messages (Only this area scrolls, z-index 10) */}
-      <div className="flex-grow overflow-y-auto px-5 py-4 flex flex-col gap-4 scrollbar-thin z-10">
+      <div ref={messagesContainerRef} className="flex-grow overflow-y-auto px-5 py-4 flex flex-col gap-4 scrollbar-thin z-10">
         {messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-2">
             <div className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -240,7 +245,6 @@ How can I help you analyze trends or allocate resources in this sector today?`,
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input controls container (Fully Opaque, Sticky/Fixed height, z-index 20) */}
