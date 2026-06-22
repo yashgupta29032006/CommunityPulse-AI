@@ -117,24 +117,24 @@ How can I help you analyze trends or allocate resources in this sector today?`,
   };
 
   return (
-    <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-5 flex flex-col h-[550px] transition-colors">
+    <div className="relative flex flex-col h-[550px] bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm transition-colors overflow-hidden">
       
-      {/* Header */}
-      <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800/60 pb-4 mb-4">
+      {/* Header (Fully Opaque, Sticky/Fixed height, z-index 20) */}
+      <div className="sticky top-0 bg-white dark:bg-[#0c0c0f] z-20 px-5 pt-5 pb-3.5 border-b border-zinc-150 dark:border-zinc-800/80 flex items-center gap-2.5 flex-shrink-0">
         <div className="p-2 bg-blue-100 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
           <Bot className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5">
+          <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50 flex items-center gap-1.5 leading-none">
             PulseCopilot AI
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Grounding Active</span>
+            <span className="text-[9px] font-bold text-zinc-405 dark:text-zinc-500 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-900 px-1 py-0.5 rounded border border-zinc-200 dark:border-zinc-800/30">Grounding Active</span>
           </h3>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500">Query local operations data in natural language.</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Query local operations data in natural language.</p>
         </div>
       </div>
 
-      {/* Chat Messages */}
-      <div className="flex-grow overflow-y-auto pr-1 flex flex-col gap-4 mb-4 scrollbar-thin">
+      {/* Chat Messages (Only this area scrolls, z-index 10) */}
+      <div className="flex-grow overflow-y-auto px-5 py-4 flex flex-col gap-4 scrollbar-thin z-10">
         {messages.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-2">
             <div className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -148,7 +148,7 @@ How can I help you analyze trends or allocate resources in this sector today?`,
               <div className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed border transition-colors ${
                 msg.role === 'user'
                   ? 'bg-zinc-900 border-zinc-800 text-white dark:bg-zinc-900 dark:border-zinc-800'
-                  : 'bg-zinc-50 border-zinc-200 dark:bg-[#121217]/50 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-250'
+                  : 'bg-zinc-50 border-zinc-200 dark:bg-[#121217]/50 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-200'
               }`}>
                 <div className="prose prose-sm dark:prose-invert max-w-none space-y-2">
                   {msg.content.split('\n').map((line, idx) => {
@@ -184,6 +184,7 @@ How can I help you analyze trends or allocate resources in this sector today?`,
 
             </div>
 
+            {/* Explainability Accordion */}
             {msg.role === 'assistant' && msg.explainability && (
               <div className="ml-11 max-w-[85%] bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 rounded-lg p-2.5">
                 <button
@@ -198,7 +199,7 @@ How can I help you analyze trends or allocate resources in this sector today?`,
                 </button>
 
                 {expandedMessageId === msg.id && (
-                  <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-900 flex flex-col gap-2 font-mono text-[10px] text-zinc-600 dark:text-zinc-400">
+                  <div className="mt-2.5 pt-2 border-t border-zinc-200 dark:border-zinc-900 flex flex-col gap-2 font-mono text-[10px] text-zinc-650 dark:text-zinc-400">
                     <div className="flex justify-between items-center bg-zinc-100 dark:bg-zinc-900/60 px-2 py-1 rounded">
                       <span>Reasoning Confidence:</span>
                       <span className="font-bold text-emerald-400">{(msg.explainability.confidence * 100).toFixed(0)}%</span>
@@ -212,7 +213,7 @@ How can I help you analyze trends or allocate resources in this sector today?`,
                       </div>
                     </div>
                     <div>
-                      <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 block mb-0.5">REASONING CHAIN:</span>
+                      <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-505 block mb-0.5">REASONING CHAIN:</span>
                       <ol className="list-decimal list-inside space-y-0.5 text-[9px]">
                         {msg.explainability.reasoningSteps.map((step, idx) => (
                           <li key={idx} className="leading-relaxed">{step}</li>
@@ -242,44 +243,45 @@ How can I help you analyze trends or allocate resources in this sector today?`,
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Questions */}
-      <div className="mb-3">
+      {/* Input controls container (Fully Opaque, Sticky/Fixed height, z-index 20) */}
+      <div className="sticky bottom-0 bg-white dark:bg-[#0c0c0f] z-20 px-5 pb-5 pt-3 border-t border-zinc-150 dark:border-zinc-800/80 flex flex-col gap-3 flex-shrink-0">
+        {/* Suggested Questions */}
         <div className="flex flex-wrap gap-1.5">
           {getSuggestions().map((sug, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(sug)}
-              className="text-[9px] sm:text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-100 dark:border-blue-900/20 px-2.5 py-1.5 rounded-full transition-colors truncate max-w-[90vw]"
+              className="text-[9px] sm:text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-100 dark:border-blue-900/20 px-2.5 py-1.5 rounded-full transition-colors truncate max-w-full"
             >
               {sug}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Input Box */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSendMessage(input);
-        }}
-        className="flex gap-2"
-      >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={`Ask PulseCopilot about ${userLocation.city || 'local'} AQI, temperature, transit or alerts...`}
-          className="flex-grow bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || loading}
-          className="p-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center"
+        {/* Input Box Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage(input);
+          }}
+          className="flex gap-2"
         >
-          <Send className="h-4 w-4" />
-        </button>
-      </form>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={`Ask PulseCopilot about ${userLocation.city || 'local'} AQI, temperature, transit or alerts...`}
+            className="flex-grow bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2.5 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || loading}
+            className="p-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </form>
+      </div>
 
     </div>
   );
