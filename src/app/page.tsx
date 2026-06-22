@@ -11,6 +11,7 @@ import CopilotPanel from '../components/CopilotPanel';
 import AlertsPanel from '../components/AlertsPanel';
 import ReportGenerator from '../components/ReportGenerator';
 import ScenarioSimulator from '../components/ScenarioSimulator';
+import IntroExperience from '../components/IntroExperience';
 
 import { locationService } from '../services/locationService';
 import { getLocalizedData, getActiveAlerts, getStaticRecommendations, DEFAULT_LOCATION } from '../services/mockData';
@@ -22,6 +23,17 @@ export default function Home() {
   const [activeView, setActiveView] = useState<'landing' | 'dashboard'>('landing');
   const [persona, setPersona] = useState<UserPersona>('citizen');
   const [selectedRegionId, setSelectedRegionId] = useState<string>('downtown');
+  const [showIntro, setShowIntro] = useState(false);
+
+  // Check first visit
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const introSeen = localStorage.getItem('communitypulse_intro_seen');
+      if (!introSeen) {
+        setShowIntro(true);
+      }
+    }
+  }, []);
   
   // Location & Telemetry States
   const [currentLocation, setCurrentLocation] = useState<UserLocation | null>(null);
@@ -299,6 +311,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] transition-colors flex flex-col justify-between">
+      {showIntro && <IntroExperience onClose={() => setShowIntro(false)} />}
       <div>
         <DashboardHeader
           currentPersona={persona}
@@ -502,7 +515,16 @@ export default function Home() {
 
       <footer className="border-t border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 py-5 text-center text-xs text-zinc-500 font-mono flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 gap-3">
         <span>© 2026 CommunityPulse AI. APAC Gen AI Challenge.</span>
-        <span>Secure Geolocation API // Local RAG Active</span>
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          <button 
+            onClick={() => setShowIntro(true)} 
+            className="hover:text-blue-500 underline transition-colors"
+          >
+            Watch Intro Again
+          </button>
+          <span className="text-zinc-700">//</span>
+          <span>Secure Geolocation API // Local RAG Active</span>
+        </div>
       </footer>
     </div>
   );
