@@ -69,40 +69,42 @@ export default function AnalyticsCharts({ region }: AnalyticsChartsProps) {
         </div>
 
         {/* Tab switchers */}
-        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 self-start sm:self-center">
-          <button
-            onClick={() => setActiveTab('environmental')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
-              activeTab === 'environmental'
-                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
-            }`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            Environment
-          </button>
-          <button
-            onClick={() => setActiveTab('mobility')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
-              activeTab === 'mobility'
-                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
-            }`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            Mobility &amp; Health
-          </button>
-          <button
-            onClick={() => setActiveTab('complaints')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
-              activeTab === 'complaints'
-                ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
-            }`}
-          >
-            <PieIcon className="h-3.5 w-3.5" />
-            Public Reports
-          </button>
+        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 self-start sm:self-center overflow-x-auto max-w-full scrollbar-none w-full sm:w-auto shrink-0">
+          <div className="flex whitespace-nowrap min-w-max">
+            <button
+              onClick={() => setActiveTab('environmental')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 shrink-0 min-h-[36px] ${
+                activeTab === 'environmental'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              }`}
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              Environment
+            </button>
+            <button
+              onClick={() => setActiveTab('mobility')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 shrink-0 min-h-[36px] ${
+                activeTab === 'mobility'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              }`}
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              Mobility &amp; Health
+            </button>
+            <button
+              onClick={() => setActiveTab('complaints')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 shrink-0 min-h-[36px] ${
+                activeTab === 'complaints'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              }`}
+            >
+              <PieIcon className="h-3.5 w-3.5" />
+              Public Reports
+            </button>
+          </div>
         </div>
       </div>
 

@@ -144,7 +144,7 @@ export default function AlertsPanel({
                     <button
                       onClick={() => handleExecute(rec.id, rec.regionId, rec.title)}
                       disabled={isExecuted || isExecuting}
-                      className={`mt-2 py-2 px-3 rounded-lg border font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                      className={`mt-2 py-2.5 px-4 rounded-lg border font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm min-h-[40px] w-full sm:w-auto ${
                         isExecuted 
                           ? 'bg-zinc-900 border-zinc-800 text-zinc-500 cursor-not-allowed'
                           : isExecuting

@@ -255,7 +255,7 @@ How can I help you analyze trends or allocate resources in this sector today?`,
             <button
               key={idx}
               onClick={() => handleSendMessage(sug)}
-              className="text-[9px] sm:text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-100 dark:border-blue-900/20 px-2.5 py-1.5 rounded-full transition-colors truncate max-w-full"
+              className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-100 dark:border-blue-900/20 px-3 py-2 rounded-full transition-colors truncate max-w-full min-h-[32px]"
             >
               {sug}
             </button>
@@ -275,12 +275,12 @@ How can I help you analyze trends or allocate resources in this sector today?`,
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={`Ask PulseCopilot about ${userLocation.city || 'local'} AQI, temperature, transit or alerts...`}
-            className="flex-grow bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2.5 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="flex-grow bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2.5 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[40px]"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="p-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center"
+            className="p-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center min-h-[40px] min-w-[40px]"
           >
             <Send className="h-4 w-4" />
           </button>

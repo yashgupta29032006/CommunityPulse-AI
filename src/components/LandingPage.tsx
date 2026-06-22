@@ -18,7 +18,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f23_1px,transparent_1px),linear-gradient(to_bottom,#1f1f23_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
 
       {/* Header */}
-      <header className="relative z-10 max-w-7xl mx-auto w-full px-6 py-6 flex items-center justify-between border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md">
+      <header className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex items-center justify-between border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <div className="p-2 bg-gradient-to-tr from-blue-600 to-emerald-500 rounded-lg shadow-lg shadow-blue-500/10 flex items-center justify-center">
             <Activity className="h-6 w-6 text-black" />
@@ -44,7 +44,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
       </header>
 
       {/* Hero Body */}
-      <main className="relative z-10 max-w-7xl mx-auto w-full px-6 py-12 md:py-20 flex-grow flex flex-col justify-center gap-16">
+      <main className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 py-12 md:py-20 flex-grow flex flex-col justify-center gap-16">
         {/* Pitch Headline */}
         <div className="text-center max-w-3xl mx-auto flex flex-col gap-6">
           <div className="inline-flex items-center gap-1.5 mx-auto bg-gradient-to-r from-blue-500/10 to-emerald-500/10 border border-blue-500/20 px-3 py-1 rounded-full text-xs font-semibold text-blue-300 backdrop-blur-sm">
@@ -140,7 +140,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
         </div>
 
         {/* Feature Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-zinc-800/50 pt-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 border-t border-zinc-800/50 pt-10">
           <div className="flex gap-3">
             <div className="p-2 bg-zinc-900 rounded-lg text-zinc-400 h-fit">
               <Bot className="h-5 w-5" />
@@ -181,7 +181,7 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 max-w-7xl mx-auto w-full px-6 py-6 border-t border-zinc-800/40 text-center text-xs text-zinc-500 flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 border-t border-zinc-800/40 text-center text-xs text-zinc-500 flex flex-col md:flex-row items-center justify-between gap-4">
         <span>© 2026 CommunityPulse AI. Google Gen AI APAC Challenge Submission.</span>
         <span className="font-mono">Adaptive Urban Sustainability Engine</span>
       </footer>

@@ -97,51 +97,53 @@ export default function LocationBanner({
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="w-full md:w-auto bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+              className="w-full md:w-auto bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2.5 text-xs font-semibold transition-colors flex items-center justify-center gap-2 min-h-[40px]"
             >
               <Edit2 className="h-3.5 w-3.5" />
               Adjust Center Location
             </button>
           ) : (
             <div className="flex flex-col gap-1.5 w-full max-w-md">
-              <form onSubmit={handleSearchSubmit} className="flex gap-2">
-                <div className="relative flex-grow">
+              <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2 w-full">
+                <div className="relative flex-grow w-full">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Enter city (e.g. Delhi, New York, London)..."
-                    className="w-full bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none"
+                    className="w-full bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg pl-9 pr-3 py-2.5 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none min-h-[40px]"
                     disabled={searchLoading}
                   />
-                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                  <Search className="absolute left-3 top-3 h-3.5 w-3.5 text-zinc-400" />
                 </div>
-                <button
-                  type="submit"
-                  disabled={searchLoading || !searchQuery.trim()}
-                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-xs font-semibold transition-colors"
-                >
-                  Go
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGpsClick}
-                  disabled={searchLoading}
-                  className="p-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors flex items-center justify-center"
-                  title="Detect browser GPS"
-                >
-                  <Compass className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setSearchError(null);
-                  }}
-                  className="px-2.5 py-2 border border-zinc-200 dark:border-zinc-800 text-zinc-500 rounded-lg text-xs hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                >
-                  Cancel
-                </button>
+                <div className="flex gap-2 justify-end sm:justify-start w-full sm:w-auto">
+                  <button
+                    type="submit"
+                    disabled={searchLoading || !searchQuery.trim()}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-xs font-semibold transition-colors flex-grow sm:flex-grow-0 min-h-[40px] flex items-center justify-center"
+                  >
+                    Go
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGpsClick}
+                    disabled={searchLoading}
+                    className="p-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors flex items-center justify-center min-h-[40px] min-w-[40px]"
+                    title="Detect browser GPS"
+                  >
+                    <Compass className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setSearchError(null);
+                    }}
+                    className="px-3.5 py-2.5 border border-zinc-200 dark:border-zinc-800 text-zinc-500 rounded-lg text-xs hover:bg-zinc-100 dark:hover:bg-zinc-900 flex-grow sm:flex-grow-0 min-h-[40px] flex items-center justify-center"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </form>
 
               {searchError && (

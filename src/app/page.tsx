@@ -209,7 +209,7 @@ export default function Home() {
           location={activeLocationObj}
         />
 
-        <main className="max-w-[1600px] mx-auto px-6 py-6 flex flex-col gap-6">
+        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
           {/* Location Search / Status Banner */}
           <LocationBanner
             currentLocation={currentLocation}
@@ -358,7 +358,7 @@ export default function Home() {
         </main>
       </div>
 
-      <footer className="border-t border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 py-5 text-center text-xs text-zinc-500 font-mono flex flex-col sm:flex-row justify-between items-center px-6 gap-3">
+      <footer className="border-t border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 py-5 text-center text-xs text-zinc-500 font-mono flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 gap-3">
         <span>© 2026 CommunityPulse AI. APAC Gen AI Challenge.</span>
         <span>Secure Geolocation API // Local RAG Active</span>
       </footer>

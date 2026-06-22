@@ -48,7 +48,7 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
             setReportTitle(`${cityName} Daily Situation Executive Brief`);
             setShowPreview(true);
           }}
-          className="w-full sm:w-auto bg-[#059669] hover:bg-[#047857] text-[#000000] font-extrabold rounded-lg px-4 py-2 text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5"
+          className="w-full sm:w-auto bg-[#059669] hover:bg-[#047857] text-[#000000] font-extrabold rounded-lg px-4 py-2.5 text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5 min-h-[40px]"
         >
           <Download className="h-4 w-4" />
           Compile &amp; Download PDF
@@ -57,8 +57,8 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
 
       {/* Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col justify-between overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col justify-between overflow-hidden">
             
             {/* Modal Header */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800/80 flex justify-between items-center bg-zinc-50 dark:bg-zinc-950/20">
@@ -82,7 +82,7 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
                   type="text"
                   value={reportTitle}
                   onChange={(e) => setReportTitle(e.target.value)}
-                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                  className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none min-h-[38px]"
                 />
               </div>
               <div>
@@ -129,7 +129,7 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
             </div>
 
             {/* Document Body (Printable Area) */}
-            <div id="printable-report" className="flex-grow overflow-y-auto p-8 bg-white text-zinc-950 font-sans print:p-0 print:overflow-visible">
+            <div id="printable-report" className="flex-grow overflow-y-auto p-4 sm:p-8 bg-white text-zinc-950 font-sans print:p-0 print:overflow-visible">
               <div className="max-w-[750px] mx-auto flex flex-col gap-6">
                 
                 {/* Header */}
@@ -158,32 +158,34 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
                 {sections.regionalData && (
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">II. Regional Telemetry</h2>
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-zinc-800 bg-zinc-50">
-                          <th className="py-2 px-1">Sector</th>
-                          <th className="py-2 px-1 text-center">AQI</th>
-                          <th className="py-2 px-1 text-center">Temp (°C)</th>
-                          <th className="py-2 px-1 text-center">Traffic (%)</th>
-                          <th className="py-2 px-1 text-center">Health (%)</th>
-                          <th className="py-2 px-1 text-center">Complaints</th>
-                          <th className="py-2 px-1 text-right">Risk Score</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {regions.map((r) => (
-                          <tr key={r.id} className="border-b border-zinc-200">
-                            <td className="py-2 px-1 font-semibold">{r.name}</td>
-                            <td className="py-2 px-1 text-center font-mono">{r.aqi}</td>
-                            <td className="py-2 px-1 text-center font-mono">{r.temperature.toFixed(1)}</td>
-                            <td className="py-2 px-1 text-center font-mono">{r.trafficCongestion}%</td>
-                            <td className="py-2 px-1 text-center font-mono">{r.healthcareDemand}%</td>
-                            <td className="py-2 px-1 text-center font-mono">{r.complaintsCount}</td>
-                            <td className="py-2 px-1 text-right font-mono font-bold capitalize">{r.riskLevel} ({r.riskScore})</td>
+                    <div className="overflow-x-auto w-full">
+                      <table className="w-full text-left text-xs border-collapse min-w-[550px] md:min-w-0">
+                        <thead>
+                          <tr className="border-b-2 border-zinc-800 bg-zinc-50">
+                            <th className="py-2 px-1">Sector</th>
+                            <th className="py-2 px-1 text-center">AQI</th>
+                            <th className="py-2 px-1 text-center">Temp (°C)</th>
+                            <th className="py-2 px-1 text-center">Traffic (%)</th>
+                            <th className="py-2 px-1 text-center">Health (%)</th>
+                            <th className="py-2 px-1 text-center">Complaints</th>
+                            <th className="py-2 px-1 text-right">Risk Score</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {regions.map((r) => (
+                            <tr key={r.id} className="border-b border-zinc-200">
+                              <td className="py-2 px-1 font-semibold">{r.name}</td>
+                              <td className="py-2 px-1 text-center font-mono">{r.aqi}</td>
+                              <td className="py-2 px-1 text-center font-mono">{r.temperature.toFixed(1)}</td>
+                              <td className="py-2 px-1 text-center font-mono">{r.trafficCongestion}%</td>
+                              <td className="py-2 px-1 text-center font-mono">{r.healthcareDemand}%</td>
+                              <td className="py-2 px-1 text-center font-mono">{r.complaintsCount}</td>
+                              <td className="py-2 px-1 text-right font-mono font-bold capitalize">{r.riskLevel} ({r.riskScore})</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
 
@@ -245,17 +247,18 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/80 flex justify-end gap-3 bg-zinc-50 dark:bg-zinc-950/20">
+            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/80 flex flex-col sm:flex-row justify-end gap-2 bg-zinc-50 dark:bg-zinc-950/20">
               <button
                 onClick={() => setShowPreview(false)}
-                className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-semibold"
+                className="w-full sm:w-auto px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-semibold min-h-[40px] flex items-center justify-center"
               >
                 Close Preview
               </button>
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-extrabold shadow-sm flex items-center gap-1.5"
+                className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-extrabold shadow-sm flex items-center justify-center gap-1.5 min-h-[40px]"
               >
+                <Download className="h-4 w-4" />
                 Print / Save PDF
               </button>
             </div>

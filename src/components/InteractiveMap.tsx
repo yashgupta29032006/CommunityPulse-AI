@@ -70,29 +70,31 @@ export default function InteractiveMap({
         </div>
 
         {/* Action Toggles */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
           {/* Layer Selector */}
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            {(['risk', 'aqi', 'traffic', 'health'] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => setActiveLayer(l)}
-                className={`px-2 py-1 text-[10px] font-bold rounded-md capitalize transition-all ${
-                  activeLayer === l
-                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-x-auto max-w-[280px] xs:max-w-full scrollbar-none shrink-0">
+            <div className="flex whitespace-nowrap min-w-max">
+              {(['risk', 'aqi', 'traffic', 'health'] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setActiveLayer(l)}
+                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded-md capitalize transition-all shrink-0 min-h-[32px] ${
+                    activeLayer === l
+                      ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Mode Selector */}
-          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 shrink-0">
             <button
               onClick={() => setMapMode('schematic')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1 min-h-[32px] ${
                 mapMode === 'schematic'
                   ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
@@ -103,7 +105,7 @@ export default function InteractiveMap({
             </button>
             <button
               onClick={() => setMapMode('geographic')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1 min-h-[32px] ${
                 mapMode === 'geographic'
                   ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
@@ -130,7 +132,7 @@ export default function InteractiveMap({
           /* Custom Schematic Singapore Vector Map */
           <div className="relative w-full h-full bg-zinc-50 dark:bg-[#08080a] flex items-center justify-center p-4">
             {/* Legend Overlay */}
-            <div className="absolute top-3 left-3 bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-850 rounded-lg p-2 shadow-sm text-[10px] font-mono flex flex-col gap-1 z-10">
+            <div className="absolute top-3 left-3 bg-white/95 dark:bg-zinc-900/95 border border-zinc-200 dark:border-zinc-850 rounded-lg p-1.5 sm:p-2 shadow-sm text-[9px] sm:text-[10px] font-mono flex flex-col gap-0.5 sm:gap-1 z-10 max-w-[200px]">
               <span className="text-zinc-400 font-bold uppercase tracking-wider text-[8px]">Overlay: {getOverlayLabel()}</span>
               {regions.map(r => {
                 let scoreText = '';
