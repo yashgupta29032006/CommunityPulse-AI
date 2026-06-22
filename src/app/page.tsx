@@ -206,6 +206,7 @@ export default function Home() {
           onChangePersona={setPersona}
           activeAlertsCount={activeAlerts.length}
           onExit={handleExitDashboard}
+          location={activeLocationObj}
         />
 
         <main className="max-w-[1600px] mx-auto px-6 py-6 flex flex-col gap-6">

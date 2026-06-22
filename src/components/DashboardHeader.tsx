@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, ShieldAlert, LogOut, Sun, Moon, Sparkles, UserCheck } from 'lucide-react';
-import { UserPersona } from '../types';
+import { UserPersona, UserLocation } from '../types';
 
 interface DashboardHeaderProps {
   currentPersona: UserPersona;
   onChangePersona: (persona: UserPersona) => void;
   activeAlertsCount: number;
   onExit: () => void;
+  location: UserLocation;
 }
 
 export default function DashboardHeader({
   currentPersona,
   onChangePersona,
   activeAlertsCount,
-  onExit
+  onExit,
+  location
 }: DashboardHeaderProps) {
   const [time, setTime] = useState<string>('');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -50,10 +52,11 @@ export default function DashboardHeader({
   };
 
   const getPersonaLabel = (p: UserPersona) => {
+    const city = location?.city || 'Local';
     switch (p) {
       case 'admin': return 'City Administrator';
       case 'ngo': return 'NGO Coordinator';
-      case 'citizen': return 'Singapore Citizen';
+      case 'citizen': return `${city} Resident`;
     }
   };
 
@@ -120,7 +123,7 @@ export default function DashboardHeader({
               onChange={(e) => onChangePersona(e.target.value as UserPersona)}
               className="bg-transparent border-0 text-xs font-medium text-zinc-700 dark:text-zinc-300 focus:ring-0 focus:outline-none pr-7 py-1 cursor-pointer"
             >
-              <option value="citizen">Singapore Citizen</option>
+              <option value="citizen">{location?.city || 'Local'} Resident</option>
               <option value="ngo">NGO Coordinator</option>
               <option value="admin">City Administrator</option>
             </select>
