@@ -28,6 +28,8 @@ export interface MetricPoint {
   complaints: number;
 }
 
+export type DataSourceType = 'live' | 'cached' | 'simulated';
+
 export interface RegionData {
   id: string;
   name: string;
@@ -45,6 +47,11 @@ export interface RegionData {
   metricsHistory: MetricPoint[];
   complaintsList: Complaint[];
   resourcesDeployed: Resource[];
+  dataSourceType?: DataSourceType;
+  dataProvider?: string;
+  dataLastUpdated?: string;
+  windSpeed?: number;
+  uvIndex?: number;
 }
 
 export interface Alert {

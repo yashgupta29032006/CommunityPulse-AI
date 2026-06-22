@@ -42,14 +42,39 @@ export default function KpiGrid({ region, persona, activeAlertsCount }: KpiGridP
   // Dynamic values depending on persona
   const activeResourcesCount = region.resourcesDeployed.reduce((sum, res) => sum + res.quantity, 0);
 
+  const renderSourceIndicator = (type?: 'live' | 'cached' | 'simulated', provider?: string) => {
+    let dotColor = 'bg-blue-500'; // simulated
+    let tooltip = 'Simulated baseline telemetry.';
+    if (type === 'live') {
+      dotColor = 'bg-emerald-500';
+      tooltip = `Live Feed: ${provider || 'Open-Meteo API'}`;
+    } else if (type === 'cached') {
+      dotColor = 'bg-amber-500';
+      tooltip = `Cached Feed: ${provider || 'Local Storage'}`;
+    }
+
+    return (
+      <span 
+        className="flex items-center gap-1.5 cursor-help"
+        title={tooltip}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`} />
+        <span className="text-[8px] text-zinc-400 dark:text-zinc-550 font-mono uppercase tracking-widest">{type || 'simulated'}</span>
+      </span>
+    );
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
       
       {/* CARD 1: Air Quality */}
       <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between shadow-sm transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Air Quality</span>
-          <Wind className="h-5 w-5 text-sky-500" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Air Quality</span>
+            {renderSourceIndicator(region.dataSourceType, region.dataProvider)}
+          </div>
+          <Wind className="h-5 w-5 text-sky-500 flex-shrink-0" />
         </div>
         <div>
           <div className="flex items-baseline gap-2">
@@ -68,8 +93,11 @@ export default function KpiGrid({ region, persona, activeAlertsCount }: KpiGridP
       {/* CARD 2: Temperature / Heat Index */}
       <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between shadow-sm transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Temperature</span>
-          <Thermometer className="h-5 w-5 text-orange-500" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Temperature</span>
+            {renderSourceIndicator(region.dataSourceType, region.dataProvider)}
+          </div>
+          <Thermometer className="h-5 w-5 text-orange-500 flex-shrink-0" />
         </div>
         <div>
           <div className="flex items-baseline gap-2">
@@ -88,8 +116,11 @@ export default function KpiGrid({ region, persona, activeAlertsCount }: KpiGridP
       {/* CARD 3: Traffic Congestion */}
       <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between shadow-sm transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Traffic Congestion</span>
-          <Car className="h-5 w-5 text-indigo-500" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Traffic Congestion</span>
+            {renderSourceIndicator('simulated', 'Simulated Loop Sensors')}
+          </div>
+          <Car className="h-5 w-5 text-indigo-500 flex-shrink-0" />
         </div>
         <div>
           <div className="flex items-baseline gap-2">
@@ -109,8 +140,11 @@ export default function KpiGrid({ region, persona, activeAlertsCount }: KpiGridP
       {persona === 'citizen' && (
         <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 flex flex-col justify-between shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Healthcare Load</span>
-            <Activity className="h-5 w-5 text-emerald-500" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Healthcare Load</span>
+              {renderSourceIndicator('simulated', 'Simulated Clinic Telemetry')}
+            </div>
+            <Activity className="h-5 w-5 text-emerald-500 flex-shrink-0" />
           </div>
           <div>
             <div className="flex items-baseline gap-2">
@@ -139,17 +173,17 @@ export default function KpiGrid({ region, persona, activeAlertsCount }: KpiGridP
           <div>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-zinc-950 dark:text-zinc-50 font-mono">
-                {region.id === 'woodlands' ? 82 : region.id === 'jurong' ? 68 : region.id === 'central' ? 52 : 38}
+                {region.id === 'residential' ? 82 : region.id === 'industrial' ? 68 : region.id === 'downtown' ? 52 : 38}
               </span>
               <span className="text-xs text-zinc-400 font-mono">/ 100 max</span>
             </div>
             <div className="mt-3 flex items-center gap-1.5">
               <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                region.id === 'woodlands' || region.id === 'jurong'
+                region.id === 'residential' || region.id === 'industrial'
                   ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
                   : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
               }`}>
-                {region.id === 'woodlands' ? 'Critical (Elderly Surge)' : region.id === 'jurong' ? 'Elevated (Pollution Risk)' : 'Stable'}
+                {region.id === 'residential' ? 'Critical (Elderly Surge)' : region.id === 'industrial' ? 'Elevated (Pollution Risk)' : 'Stable'}
               </span>
             </div>
           </div>

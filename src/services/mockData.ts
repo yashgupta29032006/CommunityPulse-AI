@@ -1,4 +1,5 @@
 import { RegionData, Alert, Complaint, Resource, Recommendation, UserLocation } from '../types';
+import { TelemetryFeed } from './dataProvider';
 
 // Default failsafe location (Singapore) if geolocating fails
 export const DEFAULT_LOCATION: UserLocation = {
@@ -32,7 +33,10 @@ const isCoastalLocation = (location: UserLocation): boolean => {
 };
 
 // Dynamic Sub-region Archetypes Generator
-export const getLocalizedData = (location: UserLocation = DEFAULT_LOCATION): RegionData[] => {
+export const getLocalizedData = (
+  location: UserLocation = DEFAULT_LOCATION,
+  liveFeeds?: Record<string, TelemetryFeed>
+): RegionData[] => {
   const lat = location.latitude;
   const lng = location.longitude;
   const cityName = location.city || 'Local Area';
@@ -48,9 +52,14 @@ export const getLocalizedData = (location: UserLocation = DEFAULT_LOCATION): Reg
       name: `${cityName} Downtown`,
       coordinates: [lat, lng] as [number, number],
       description: `High-density commercial core of ${cityName}. Prone to rush-hour gridlocks and urban heat island effects.`,
-      aqi: 58,
-      temperature: 31.2,
-      humidity: 75,
+      aqi: liveFeeds?.downtown?.aqi ?? 58,
+      temperature: liveFeeds?.downtown?.temperature ?? 31.2,
+      humidity: liveFeeds?.downtown?.humidity ?? 75,
+      windSpeed: liveFeeds?.downtown?.windSpeed ?? 5.5,
+      uvIndex: liveFeeds?.downtown?.uvIndex ?? 6,
+      dataSourceType: liveFeeds?.downtown?.dataSourceType ?? 'simulated',
+      dataProvider: liveFeeds?.downtown?.dataProvider ?? 'Simulated Engine',
+      dataLastUpdated: liveFeeds?.downtown?.dataLastUpdated ?? new Date().toISOString(),
       trafficCongestion: 78,
       healthcareDemand: 60,
       sustainabilityIndex: 65,
@@ -61,9 +70,14 @@ export const getLocalizedData = (location: UserLocation = DEFAULT_LOCATION): Reg
       name: `${cityName} Industrial Zone`,
       coordinates: [lat + 0.012, lng - 0.018] as [number, number],
       description: `Manufacturing and logistics hub near ${cityName}. Characterized by higher atmospheric particulate counts.`,
-      aqi: 135,
-      temperature: 32.8,
-      humidity: 68,
+      aqi: liveFeeds?.industrial?.aqi ?? 135,
+      temperature: liveFeeds?.industrial?.temperature ?? 32.8,
+      humidity: liveFeeds?.industrial?.humidity ?? 68,
+      windSpeed: liveFeeds?.industrial?.windSpeed ?? 7.2,
+      uvIndex: liveFeeds?.industrial?.uvIndex ?? 5,
+      dataSourceType: liveFeeds?.industrial?.dataSourceType ?? 'simulated',
+      dataProvider: liveFeeds?.industrial?.dataProvider ?? 'Simulated Engine',
+      dataLastUpdated: liveFeeds?.industrial?.dataLastUpdated ?? new Date().toISOString(),
       trafficCongestion: 40,
       healthcareDemand: 75,
       sustainabilityIndex: 48,
@@ -74,9 +88,14 @@ export const getLocalizedData = (location: UserLocation = DEFAULT_LOCATION): Reg
       name: `${cityName} Residential Suburb`,
       coordinates: [lat - 0.015, lng + 0.012] as [number, number],
       description: `Highly populated residential sector. Features critical senior citizen clusters susceptible to heat waves.`,
-      aqi: 45,
-      temperature: 34.6, // Elevated to trigger warnings
-      humidity: 80,
+      aqi: liveFeeds?.residential?.aqi ?? 45,
+      temperature: liveFeeds?.residential?.temperature ?? 34.6, // Elevated to trigger warnings
+      humidity: liveFeeds?.residential?.humidity ?? 80,
+      windSpeed: liveFeeds?.residential?.windSpeed ?? 4.0,
+      uvIndex: liveFeeds?.residential?.uvIndex ?? 7,
+      dataSourceType: liveFeeds?.residential?.dataSourceType ?? 'simulated',
+      dataProvider: liveFeeds?.residential?.dataProvider ?? 'Simulated Engine',
+      dataLastUpdated: liveFeeds?.residential?.dataLastUpdated ?? new Date().toISOString(),
       trafficCongestion: 52,
       healthcareDemand: 82, // Saturation point
       sustainabilityIndex: 75,
@@ -89,9 +108,14 @@ export const getLocalizedData = (location: UserLocation = DEFAULT_LOCATION): Reg
       description: isCoastal 
         ? `Coastal transit and maritime precinct in ${cityName}. Elevated humidity and high wind dispersal.`
         : `Technology and university district in ${cityName}. Rich green landscaping and lower traffic baselines.`,
-      aqi: 32,
-      temperature: 29.8,
-      humidity: isCoastal ? 84 : 72,
+      aqi: liveFeeds?.innovation?.aqi ?? 32,
+      temperature: liveFeeds?.innovation?.temperature ?? 29.8,
+      humidity: isCoastal ? (liveFeeds?.innovation?.humidity ?? 84) : (liveFeeds?.innovation?.humidity ?? 72),
+      windSpeed: liveFeeds?.innovation?.windSpeed ?? 9.5,
+      uvIndex: liveFeeds?.innovation?.uvIndex ?? 4,
+      dataSourceType: liveFeeds?.innovation?.dataSourceType ?? 'simulated',
+      dataProvider: liveFeeds?.innovation?.dataProvider ?? 'Simulated Engine',
+      dataLastUpdated: liveFeeds?.innovation?.dataLastUpdated ?? new Date().toISOString(),
       trafficCongestion: 30,
       healthcareDemand: 38,
       sustainabilityIndex: 82,
@@ -268,7 +292,12 @@ export const getLocalizedData = (location: UserLocation = DEFAULT_LOCATION): Reg
       riskScore,
       metricsHistory: history,
       complaintsList,
-      resourcesDeployed
+      resourcesDeployed,
+      dataSourceType: p.dataSourceType,
+      dataProvider: p.dataProvider,
+      dataLastUpdated: p.dataLastUpdated,
+      windSpeed: p.windSpeed,
+      uvIndex: p.uvIndex
     };
   });
 };

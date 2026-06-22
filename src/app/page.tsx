@@ -10,9 +10,11 @@ import AnalyticsCharts from '../components/AnalyticsCharts';
 import CopilotPanel from '../components/CopilotPanel';
 import AlertsPanel from '../components/AlertsPanel';
 import ReportGenerator from '../components/ReportGenerator';
+import ScenarioSimulator from '../components/ScenarioSimulator';
 
 import { locationService } from '../services/locationService';
 import { getLocalizedData, getActiveAlerts, getStaticRecommendations, DEFAULT_LOCATION } from '../services/mockData';
+import { dataProviderService, TelemetryFeed } from '../services/dataProvider';
 import { RegionData, UserLocation, UserPersona } from '../types';
 import { ClipboardList, Building, Heart, Info } from 'lucide-react';
 
@@ -21,11 +23,97 @@ export default function Home() {
   const [persona, setPersona] = useState<UserPersona>('citizen');
   const [selectedRegionId, setSelectedRegionId] = useState<string>('downtown');
   
-  // Location States
+  // Location & Telemetry States
   const [currentLocation, setCurrentLocation] = useState<UserLocation | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [regionsData, setRegionsData] = useState<RegionData[]>([]);
+
+  // Telemetry Sync States
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState(300); // 5 minutes by default
+  const [pendingRegionsData, setPendingRegionsData] = useState<RegionData[]>([]);
+  const [hasUpdates, setHasUpdates] = useState(false);
+
+  const fetchTelemetry = async (location: UserLocation, forceApply: boolean = false) => {
+    setRefreshing(true);
+    try {
+      const lat = location.latitude;
+      const lng = location.longitude;
+
+      const regionsToFetch = [
+        { id: 'downtown', lat: lat, lng: lng },
+        { id: 'industrial', lat: lat + 0.012, lng: lng - 0.018 },
+        { id: 'residential', lat: lat - 0.015, lng: lng + 0.012 },
+        { id: 'innovation', lat: lat + 0.018, lng: lng + 0.020 }
+      ];
+
+      // Fetch in parallel
+      const results = await Promise.allSettled(
+        regionsToFetch.map(r => dataProviderService.getTelemetryForCoords(r.lat, r.lng))
+      );
+
+      const feeds: Record<string, TelemetryFeed> = {};
+      regionsToFetch.forEach((r, idx) => {
+        const res = results[idx];
+        if (res.status === 'fulfilled') {
+          feeds[r.id] = res.value;
+        } else {
+          feeds[r.id] = {
+            temperature: null,
+            humidity: null,
+            windSpeed: null,
+            uvIndex: null,
+            aqi: null,
+            dataSourceType: 'simulated',
+            dataProvider: 'Simulated Fallback',
+            dataLastUpdated: new Date().toISOString()
+          };
+        }
+      });
+
+      const freshData = getLocalizedData(location, feeds);
+
+      if (forceApply || regionsData.length === 0) {
+        setRegionsData(freshData);
+        setLastUpdated(new Date());
+        setHasUpdates(false);
+        setPendingRegionsData([]);
+      } else {
+        // Background refresh: Check if there's any actual difference in telemetry metrics to notify user
+        let hasChanges = false;
+        for (let i = 0; i < freshData.length; i++) {
+          const current = regionsData.find(r => r.id === freshData[i].id);
+          if (current && (current.aqi !== freshData[i].aqi || current.temperature !== freshData[i].temperature || current.dataSourceType !== freshData[i].dataSourceType)) {
+            hasChanges = true;
+            break;
+          }
+        }
+
+        if (hasChanges) {
+          setPendingRegionsData(freshData);
+          setHasUpdates(true);
+        } else {
+          // If no significant change, we just update the last sync time to show users the system is polling
+          setLastUpdated(new Date());
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch live telemetry:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const applyPendingUpdates = () => {
+    if (pendingRegionsData.length > 0) {
+      setRegionsData(pendingRegionsData);
+      setLastUpdated(new Date());
+      setHasUpdates(false);
+      setPendingRegionsData([]);
+    }
+  };
 
   // Resolve location on component mount
   useEffect(() => {
@@ -36,13 +124,13 @@ export default function Home() {
         // Automatically checks Cache -> GPS -> IP -> Fallback
         const resolved = await locationService.resolveLocation();
         setCurrentLocation(resolved);
-        setRegionsData(getLocalizedData(resolved));
+        await fetchTelemetry(resolved, true); // initial load
       } catch (err: any) {
         console.error('Initial location resolution failed, loading default:', err);
-        setLocationError(err.message || 'Could not detect location. Using Singapore default.');
+        setLocationError(err.message || 'Could not detect location. Using default.');
         // Fallback to default
         setCurrentLocation(DEFAULT_LOCATION);
-        setRegionsData(getLocalizedData(DEFAULT_LOCATION));
+        await fetchTelemetry(DEFAULT_LOCATION, true);
       } finally {
         setLocationLoading(false);
       }
@@ -50,11 +138,22 @@ export default function Home() {
     initLocation();
   }, []);
 
+  // Background Auto-Refresh Timer
+  useEffect(() => {
+    if (refreshInterval <= 0 || !currentLocation || activeView !== 'dashboard') return;
+
+    const intervalId = setInterval(() => {
+      fetchTelemetry(currentLocation, false); // background update
+    }, refreshInterval * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [currentLocation, refreshInterval, activeView, regionsData]);
+
   const handleSearchCity = async (cityName: string): Promise<boolean> => {
     try {
       const location = await locationService.searchCity(cityName);
       setCurrentLocation(location);
-      setRegionsData(getLocalizedData(location));
+      await fetchTelemetry(location, true); // Force apply on search
       setSelectedRegionId('downtown'); // Reset to downtown of new city
       return true;
     } catch (e) {
@@ -69,7 +168,7 @@ export default function Home() {
     try {
       const location = await locationService.detectBrowserLocation();
       setCurrentLocation(location);
-      setRegionsData(getLocalizedData(location));
+      await fetchTelemetry(location, true); // Force apply on GPS trigger
       setSelectedRegionId('downtown');
     } catch (e: any) {
       console.error('GPS trigger failed:', e);
@@ -100,12 +199,12 @@ export default function Home() {
   const handleExitDashboard = () => {
     locationService.clearCachedLocation();
     // Re-resolve location
-    locationService.resolveLocation(true).then((loc) => {
+    locationService.resolveLocation(true).then(async (loc) => {
       setCurrentLocation(loc);
-      setRegionsData(getLocalizedData(loc));
-    }).catch(() => {
+      await fetchTelemetry(loc, true);
+    }).catch(async () => {
       setCurrentLocation(DEFAULT_LOCATION);
-      setRegionsData(getLocalizedData(DEFAULT_LOCATION));
+      await fetchTelemetry(DEFAULT_LOCATION, true);
     });
     setActiveView('landing');
   };
@@ -207,6 +306,18 @@ export default function Home() {
           activeAlertsCount={activeAlerts.length}
           onExit={handleExitDashboard}
           location={activeLocationObj}
+          lastUpdated={lastUpdated}
+          refreshing={refreshing}
+          onRefresh={() => fetchTelemetry(activeLocationObj, true)}
+          refreshInterval={refreshInterval}
+          onChangeRefreshInterval={setRefreshInterval}
+          systemStatus={
+            regionsData.some(r => r.dataSourceType === 'live')
+              ? 'live'
+              : regionsData.some(r => r.dataSourceType === 'cached')
+              ? 'cached'
+              : 'simulated'
+          }
         />
 
         <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
@@ -218,6 +329,30 @@ export default function Home() {
             onSearchCity={handleSearchCity}
             onTriggerGps={handleTriggerGps}
           />
+
+          {/* Telemetry Background Updates Available Banner */}
+          {hasUpdates && (
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 text-blue-850 dark:text-blue-400 p-3 rounded-lg flex items-center justify-between gap-4 text-xs shadow-sm transition-all animate-pulse">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-ping" />
+                <span>New live telemetry updates are available for <strong>{activeLocationObj.city}</strong>.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={applyPendingUpdates}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition-colors"
+                >
+                  Apply Updates
+                </button>
+                <button
+                  onClick={() => setHasUpdates(false)}
+                  className="px-2.5 py-1.5 border border-zinc-250 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded font-semibold text-zinc-500 dark:text-zinc-400 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Persona Header Info Banner */}
           <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm transition-colors">
@@ -300,10 +435,17 @@ export default function Home() {
                 activeRegion={activeRegion}
                 persona={persona}
                 userLocation={activeLocationObj}
+                regionsData={regionsData}
               />
             </div>
 
           </div>
+
+          {/* Scenario Simulator Card */}
+          <ScenarioSimulator
+            currentLocation={activeLocationObj}
+            currentRegion={activeRegion}
+          />
 
           {/* Alerts and Recommendations */}
           <AlertsPanel

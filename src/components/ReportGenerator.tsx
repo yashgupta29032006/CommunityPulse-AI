@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, X } from 'lucide-react';
+import { FileText, Download, X, Sparkles, RefreshCw } from 'lucide-react';
 import { RegionData, Alert, Recommendation, UserLocation } from '../types';
 
 interface ReportGeneratorProps {
@@ -22,6 +22,38 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
     decisions: true
   });
 
+  const [isAiBrief, setIsAiBrief] = useState(false);
+  const [aiBriefContent, setAiBriefContent] = useState('');
+  const [aiBriefLoading, setAiBriefLoading] = useState(false);
+
+  const generateAiBrief = async () => {
+    setAiBriefLoading(true);
+    try {
+      const response = await fetch('/api/brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          regionId: 'all',
+          userLocation: location,
+          regionsData: regions,
+          alerts: alerts
+        })
+      });
+
+      if (!response.ok) throw new Error('AI brief generation failed');
+      const data = await response.json();
+      setAiBriefContent(data.content);
+      setReportTitle(`${cityName} AI Executive Briefing`);
+      setIsAiBrief(true);
+      setShowPreview(true);
+    } catch (e) {
+      console.error(e);
+      alert('AI brief generation encountered an error. Please try standard compiler.');
+    } finally {
+      setAiBriefLoading(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -42,17 +74,39 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
           </div>
         </div>
         
-        <button
-          onClick={() => {
-            // Recalculate title dynamically if geolocated city changed
-            setReportTitle(`${cityName} Daily Situation Executive Brief`);
-            setShowPreview(true);
-          }}
-          className="w-full sm:w-auto bg-[#059669] hover:bg-[#047857] text-[#000000] font-extrabold rounded-lg px-4 py-2.5 text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5 min-h-[40px]"
-        >
-          <Download className="h-4 w-4" />
-          Compile &amp; Download PDF
-        </button>
+        <div className="flex flex-col sm:flex-row items-stretch gap-2.5 w-full sm:w-auto">
+          {/* AI Executive Brief Button */}
+          <button
+            onClick={generateAiBrief}
+            disabled={aiBriefLoading}
+            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-extrabold rounded-lg px-4 py-2.5 text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5 min-h-[40px] border border-purple-500"
+          >
+            {aiBriefLoading ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Compiling AI Brief...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 text-purple-200" />
+                Generate Executive AI Brief
+              </>
+            )}
+          </button>
+
+          {/* Classic Brief Compiler Button */}
+          <button
+            onClick={() => {
+              setReportTitle(`${cityName} Daily Situation Executive Brief`);
+              setIsAiBrief(false);
+              setShowPreview(true);
+            }}
+            className="w-full sm:w-auto bg-[#059669] hover:bg-[#047857] text-[#000000] font-extrabold rounded-lg px-4 py-2.5 text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5 min-h-[40px]"
+          >
+            <Download className="h-4 w-4" />
+            Standard Compiler
+          </button>
+        </div>
       </div>
 
       {/* Preview Modal */}
@@ -144,96 +198,129 @@ export default function ReportGenerator({ regions, alerts, recommendations, loca
                   </div>
                 </div>
 
-                {/* Summary */}
-                {sections.summary && (
-                  <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">I. Executive Situation Summary</h2>
-                    <p className="text-xs text-zinc-650 leading-relaxed">
-                      This operational brief compiles real-time sensing data across the **{cityName}** municipality. Key focus regions include elevated industrial emissions in the Industrial Zone, and thermal warning levels tracked in the residential sector. Mobility networks, transit delay ratios, and clinic pressure metrics are summarized below. Corrective protocols are active.
-                    </p>
+                {isAiBrief ? (
+                  /* Render AI Executive Brief Markdown */
+                  <div className="prose prose-sm max-w-none text-zinc-950 text-xs flex flex-col gap-3 font-sans leading-relaxed">
+                    {aiBriefContent.split('\n').map((line, idx) => {
+                      if (line.startsWith('### I.') || line.startsWith('### II.') || line.startsWith('### III.') || line.startsWith('### IV.') || line.startsWith('### V.')) {
+                        return <h3 key={idx} className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2 mt-4 first:mt-0">{line.replace('### ', '')}</h3>;
+                      }
+                      if (line.startsWith('### ')) {
+                        return <h4 key={idx} className="text-xs font-bold text-zinc-900 mt-2 mb-1">{line.replace('### ', '')}</h4>;
+                      }
+                      if (line.startsWith('* ') || line.startsWith('- ')) {
+                        return <li key={idx} className="list-disc ml-4 text-xs mt-0.5">{line.substring(2)}</li>;
+                      }
+                      if (line.trim() === '---') {
+                        return <hr key={idx} className="border-t border-zinc-300 my-4" />;
+                      }
+                      const parts = line.split(/(\*\*.*?\*\*)/g);
+                      return (
+                        <p key={idx} className="mt-1 first:mt-0 text-xs text-zinc-850">
+                          {parts.map((part, pIdx) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                              return <strong key={pIdx} className="font-semibold text-zinc-950">{part.slice(2, -2)}</strong>;
+                            }
+                            return part;
+                          })}
+                        </p>
+                      );
+                    })}
                   </div>
-                )}
+                ) : (
+                  <>
+                    {/* Summary */}
+                    {sections.summary && (
+                      <div>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">I. Executive Situation Summary</h2>
+                        <p className="text-xs text-zinc-650 leading-relaxed">
+                          This operational brief compiles real-time sensing data across the **{cityName}** municipality. Key focus regions include elevated industrial emissions in the Industrial Zone, and thermal warning levels tracked in the residential sector. Mobility networks, transit delay ratios, and clinic pressure metrics are summarized below. Corrective protocols are active.
+                        </p>
+                      </div>
+                    )}
 
-                {/* Regional Metrics */}
-                {sections.regionalData && (
-                  <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">II. Regional Telemetry</h2>
-                    <div className="overflow-x-auto w-full">
-                      <table className="w-full text-left text-xs border-collapse min-w-[550px] md:min-w-0">
-                        <thead>
-                          <tr className="border-b-2 border-zinc-800 bg-zinc-50">
-                            <th className="py-2 px-1">Sector</th>
-                            <th className="py-2 px-1 text-center">AQI</th>
-                            <th className="py-2 px-1 text-center">Temp (°C)</th>
-                            <th className="py-2 px-1 text-center">Traffic (%)</th>
-                            <th className="py-2 px-1 text-center">Health (%)</th>
-                            <th className="py-2 px-1 text-center">Complaints</th>
-                            <th className="py-2 px-1 text-right">Risk Score</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {regions.map((r) => (
-                            <tr key={r.id} className="border-b border-zinc-200">
-                              <td className="py-2 px-1 font-semibold">{r.name}</td>
-                              <td className="py-2 px-1 text-center font-mono">{r.aqi}</td>
-                              <td className="py-2 px-1 text-center font-mono">{r.temperature.toFixed(1)}</td>
-                              <td className="py-2 px-1 text-center font-mono">{r.trafficCongestion}%</td>
-                              <td className="py-2 px-1 text-center font-mono">{r.healthcareDemand}%</td>
-                              <td className="py-2 px-1 text-center font-mono">{r.complaintsCount}</td>
-                              <td className="py-2 px-1 text-right font-mono font-bold capitalize">{r.riskLevel} ({r.riskScore})</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Active Alerts */}
-                {sections.alerts && (
-                  <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">III. Localized Alerts</h2>
-                    <div className="flex flex-col gap-2">
-                      {alerts.length > 0 ? (
-                        alerts.map((a) => (
-                          <div key={a.id} className="border border-zinc-300 rounded p-2.5 text-xs bg-zinc-50/50">
-                            <div className="flex justify-between font-bold text-zinc-800">
-                              <span>{a.regionName} - {a.type.toUpperCase()}</span>
-                              <span className="uppercase text-[9px] px-1 bg-zinc-200 rounded">{a.severity}</span>
-                            </div>
-                            <p className="text-zinc-650 mt-1 text-[11px]">{a.message}</p>
-                            <p className="text-[10px] text-zinc-505 italic mt-1">Recommended Response: {a.suggestedAction}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-zinc-500 italic">No critical anomalies logged in this reporting cycle.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Recommendations */}
-                {sections.decisions && (
-                  <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">IV. AI Grounded Action Protocols</h2>
-                    <div className="flex flex-col gap-3">
-                      {recommendations.map((rec) => (
-                        <div key={rec.id} className="border border-zinc-200 rounded p-2.5 text-xs">
-                          <div className="flex justify-between font-semibold">
-                            <span>{rec.title}</span>
-                            <span className="font-mono text-[9px] bg-zinc-100 px-1.5 py-0.5 rounded">Confidence: {(rec.confidence * 100).toFixed(0)}%</span>
-                          </div>
-                          <p className="text-zinc-650 mt-1 text-[11px]">{rec.description}</p>
-                          <div className="mt-2 text-[10px] text-zinc-500">
-                            <span className="font-bold">Rationale:</span> {rec.reasoning.join(' ')}
-                          </div>
-                          <div className="mt-1 text-[10px] text-zinc-500">
-                            <span className="font-bold">Proposed Tasks:</span> {rec.actions.join(', ')}
-                          </div>
+                    {/* Regional Metrics */}
+                    {sections.regionalData && (
+                      <div>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">II. Regional Telemetry</h2>
+                        <div className="overflow-x-auto w-full">
+                          <table className="w-full text-left text-xs border-collapse min-w-[550px] md:min-w-0">
+                            <thead>
+                              <tr className="border-b-2 border-zinc-800 bg-zinc-50">
+                                <th className="py-2 px-1">Sector</th>
+                                <th className="py-2 px-1 text-center">AQI</th>
+                                <th className="py-2 px-1 text-center">Temp (°C)</th>
+                                <th className="py-2 px-1 text-center">Traffic (%)</th>
+                                <th className="py-2 px-1 text-center">Health (%)</th>
+                                <th className="py-2 px-1 text-center">Complaints</th>
+                                <th className="py-2 px-1 text-right">Risk Score</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {regions.map((r) => (
+                                <tr key={r.id} className="border-b border-zinc-200">
+                                  <td className="py-2 px-1 font-semibold">{r.name}</td>
+                                  <td className="py-2 px-1 text-center font-mono">{r.aqi}</td>
+                                  <td className="py-2 px-1 text-center font-mono">{r.temperature.toFixed(1)}</td>
+                                  <td className="py-2 px-1 text-center font-mono">{r.trafficCongestion}%</td>
+                                  <td className="py-2 px-1 text-center font-mono">{r.healthcareDemand}%</td>
+                                  <td className="py-2 px-1 text-center font-mono">{r.complaintsCount}</td>
+                                  <td className="py-2 px-1 text-right font-mono font-bold capitalize">{r.riskLevel} ({r.riskScore})</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
+
+                    {/* Active Alerts */}
+                    {sections.alerts && (
+                      <div>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">III. Localized Alerts</h2>
+                        <div className="flex flex-col gap-2">
+                          {alerts.length > 0 ? (
+                            alerts.map((a) => (
+                              <div key={a.id} className="border border-zinc-300 rounded p-2.5 text-xs bg-zinc-50/50">
+                                <div className="flex justify-between font-bold text-zinc-800">
+                                  <span>{a.regionName} - {a.type.toUpperCase()}</span>
+                                  <span className="uppercase text-[9px] px-1 bg-zinc-255 rounded">{a.severity}</span>
+                                </div>
+                                <p className="text-zinc-650 mt-1 text-[11px]">{a.message}</p>
+                                <p className="text-[10px] text-zinc-505 italic mt-1">Recommended Response: {a.suggestedAction}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-zinc-500 italic">No critical anomalies logged in this reporting cycle.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommendations */}
+                    {sections.decisions && (
+                      <div>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">IV. AI Grounded Action Protocols</h2>
+                        <div className="flex flex-col gap-3">
+                          {recommendations.map((rec) => (
+                            <div key={rec.id} className="border border-zinc-200 rounded p-2.5 text-xs">
+                              <div className="flex justify-between font-semibold">
+                                <span>{rec.title}</span>
+                                <span className="font-mono text-[9px] bg-zinc-100 px-1.5 py-0.5 rounded">Confidence: {(rec.confidence * 100).toFixed(0)}%</span>
+                              </div>
+                              <p className="text-zinc-650 mt-1 text-[11px]">{rec.description}</p>
+                              <div className="mt-2 text-[10px] text-zinc-500">
+                                <span className="font-bold">Rationale:</span> {rec.reasoning.join(' ')}
+                              </div>
+                              <div className="mt-1 text-[10px] text-zinc-500">
+                                <span className="font-bold">Proposed Tasks:</span> {rec.actions.join(', ')}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Footer notes */}

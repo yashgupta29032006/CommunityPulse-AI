@@ -135,7 +135,7 @@ The **${r.name}** is currently experiencing major traffic bottlenecks, with cong
       'Scanned all four local sub-regions for warning thresholds',
       'Aggregated active emergency alerts'
     ];
-    evidence = `Analyzing ${cityName} telemetry. Jurong/Industrial AQI is at ${regions.find(rg => rg.id === 'industrial')?.aqi}. Residential Temp is at ${regions.find(rg => rg.id === 'residential')?.temperature.toFixed(1)}°C.`;
+    evidence = `Analyzing ${cityName} telemetry. Industrial AQI is at ${regions.find(rg => rg.id === 'industrial')?.aqi}. Residential Temp is at ${regions.find(rg => rg.id === 'residential')?.temperature.toFixed(1)}°C.`;
     confidence = 0.90;
 
     content = `### Executive Summary
@@ -177,7 +177,7 @@ Downtown and Innovation/Waterfront sectors remain within safe operational baseli
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, regionId, persona, userLocation } = body;
+    const { messages, regionId, persona, userLocation, regionsData } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Invalid messages array' }, { status: 400 });
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 
     // Use geolocated context or fallback to default
     const activeLocation: UserLocation = userLocation || DEFAULT_LOCATION;
-    const ragContext = generateRAGContext(regionId, activeLocation);
+    const ragContext = generateRAGContext(regionId, activeLocation, regionsData);
 
     const cityName = activeLocation.city || 'Local Area';
     const countryName = activeLocation.country || 'Global';
@@ -212,11 +212,11 @@ ${ragContext}
 
 Your response MUST be returned STRICTLY as a JSON object matching this schema:
 {
-  "content": "A detailed, professional response formatted in Markdown. Structure it using: ### Executive Summary, ### Key Supporting Metrics, and ### Actionable Recommendations. Use bullet points and bold text for readability. Base your findings strictly on the context data above. Address findings with respect to ${cityName}.",
+  "content": "A detailed, professional response formatted in Markdown. Structure it using: ### Observed Facts, ### Historical Trends, ### Forecasts, and ### AI Recommendations & Priority Actions. Use bullet points and bold text for readability. Base your findings strictly on the context data above. Include an AI Response Footer at the very bottom of the content markdown string listing sources, confidence score, and timestamp.",
   "explainability": {
     "confidence": 0.95, // Float between 0.0 and 1.0 representing your assessment of data completeness and predictive reliability
     "inputsUsed": ["Input 1", "Input 2"], // Array of strings representing which specific metrics or complaints from the context influenced this response
-    "reasoningSteps": ["Step 1...", "Step 2..."], // Array of strings showing the chain of thought logic used to reach the conclusions
+    "reasoningSteps": ["Step 1...", "Step 2..."], // Array of strings showing the chain of thought logic used to reach conclusions
     "evidence": "Brief string summarizing the hard facts from the data that support the recommendation."
   },
   "followUps": [
@@ -225,8 +225,14 @@ Your response MUST be returned STRICTLY as a JSON object matching this schema:
   ]
 }
 
+Ensure you clearly distinguish between:
+1. **Observed Facts**: current live metrics, alerts, and resource deployment status.
+2. **Historical Trends**: past patterns, comparisons to typical baselines.
+3. **Forecasts**: predicted conditions for the next 24-72 hours.
+4. **AI Recommendations**: suggested actions, priorities, and mitigations.
+
 DO NOT include any markdown code block wrapper (like \`\`\`json) in your raw output. Output ONLY the raw JSON string.
-Rely strictly on the observations in the provided context. Address only the user's active region and city (${cityName}). Do not hallucinate Singapore-specific details unless the user is in Singapore.`;
+Rely strictly on the observations in the provided context. Address only the user's active region and city (${cityName}). Do not hallucinate Singapore-specific details unless the user is in Singapore. If information is unavailable, explicitly acknowledge uncertainty.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

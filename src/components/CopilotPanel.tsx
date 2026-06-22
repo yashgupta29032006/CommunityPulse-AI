@@ -8,9 +8,10 @@ interface CopilotPanelProps {
   activeRegion: RegionData;
   persona: UserPersona;
   userLocation: UserLocation;
+  regionsData: RegionData[];
 }
 
-export default function CopilotPanel({ activeRegion, persona, userLocation }: CopilotPanelProps) {
+export default function CopilotPanel({ activeRegion, persona, userLocation, regionsData }: CopilotPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,8 @@ How can I help you analyze trends or allocate resources in this sector today?`,
           messages: [...messages, userMsg],
           regionId: activeRegion.id,
           persona: persona,
-          userLocation: userLocation
+          userLocation: userLocation,
+          regionsData: regionsData
         })
       });
 
@@ -176,7 +178,18 @@ How can I help you analyze trends or allocate resources in this sector today?`,
                     );
                   })}
                 </div>
-                <div className="text-[9px] text-zinc-400 dark:text-zinc-500 mt-2 text-right font-mono">
+                {msg.role === 'assistant' && (
+                  <div className="flex items-center justify-between gap-4 mt-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-800/40 text-[9px] text-zinc-400 dark:text-zinc-500 font-mono">
+                    <span className="truncate max-w-[65%]" title={msg.explainability?.inputsUsed?.join(', ')}>
+                      Sources: {msg.explainability?.inputsUsed?.join(', ') || 'Telemetry Context'}
+                    </span>
+                    <span>
+                      Confidence: <span className="text-emerald-500 font-bold">{(msg.explainability?.confidence ? msg.explainability.confidence * 100 : 90).toFixed(0)}%</span>
+                    </span>
+                  </div>
+                )}
+
+                <div className="text-[9px] text-zinc-400 dark:text-zinc-500 mt-1.5 text-right font-mono">
                   {msg.timestamp}
                 </div>
               </div>

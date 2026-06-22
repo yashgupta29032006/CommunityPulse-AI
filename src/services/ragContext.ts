@@ -1,8 +1,12 @@
 import { getLocalizedData, getActiveAlerts, getStaticRecommendations, DEFAULT_LOCATION } from './mockData';
-import { UserLocation } from '../types';
+import { UserLocation, RegionData } from '../types';
 
-export const generateRAGContext = (selectedRegionId?: string, location: UserLocation = DEFAULT_LOCATION): string => {
-  const regions = getLocalizedData(location);
+export const generateRAGContext = (
+  selectedRegionId?: string, 
+  location: UserLocation = DEFAULT_LOCATION,
+  clientRegions?: RegionData[]
+): string => {
+  const regions = clientRegions || getLocalizedData(location);
   const alerts = getActiveAlerts(regions);
   
   const cityName = location.city || 'Local Area';
@@ -18,13 +22,13 @@ Active Warning Alerts: ${alerts.filter(a => a.severity === 'warning').length}
 `;
 
   // Add overall metrics table
-  context += `### REGIONAL METRICS SUMMARY
-| Region ID | Region Name | AQI | Temp (°C) | Traffic (%) | Healthcare Demand (%) | Complaints | Sustainability Index | Risk Level (Score) |
-|---|---|---|---|---|---|---|---|---|
+  context += `### REGIONAL METRICS SUMMARY (Fact Source Information Included)
+| Region ID | Region Name | AQI | Temp (°C) | Traffic (%) | Healthcare Demand (%) | Data Source | Data Provider | Last Updated | Risk Level (Score) |
+|---|---|---|---|---|---|---|---|---|---|
 `;
 
   regions.forEach(r => {
-    context += `| ${r.id} | ${r.name} | ${r.aqi} | ${r.temperature.toFixed(1)} | ${r.trafficCongestion}% | ${r.healthcareDemand}% | ${r.complaintsCount} | ${r.sustainabilityIndex}/100 | ${r.riskLevel.toUpperCase()} (${r.riskScore}/100) |\n`;
+    context += `| ${r.id} | ${r.name} | ${r.aqi} | ${r.temperature.toFixed(1)} | ${r.trafficCongestion}% | ${r.healthcareDemand}% | ${r.dataSourceType || 'simulated'} | ${r.dataProvider || 'Simulated Engine'} | ${r.dataLastUpdated || 'N/A'} | ${r.riskLevel.toUpperCase()} (${r.riskScore}/100) |\n`;
   });
 
   context += `\n`;

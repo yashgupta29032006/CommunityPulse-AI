@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, ShieldAlert, LogOut, Sun, Moon, Sparkles, UserCheck } from 'lucide-react';
+import { Activity, ShieldAlert, LogOut, Sun, Moon, Sparkles, UserCheck, RefreshCw, Wifi, WifiOff, Database, Timer } from 'lucide-react';
 import { UserPersona, UserLocation } from '../types';
 
 interface DashboardHeaderProps {
@@ -8,6 +8,12 @@ interface DashboardHeaderProps {
   activeAlertsCount: number;
   onExit: () => void;
   location: UserLocation;
+  lastUpdated: Date | null;
+  refreshing: boolean;
+  onRefresh: () => Promise<void>;
+  refreshInterval: number;
+  onChangeRefreshInterval: (interval: number) => void;
+  systemStatus: 'live' | 'cached' | 'simulated';
 }
 
 export default function DashboardHeader({
@@ -15,7 +21,13 @@ export default function DashboardHeader({
   onChangePersona,
   activeAlertsCount,
   onExit,
-  location
+  location,
+  lastUpdated,
+  refreshing,
+  onRefresh,
+  refreshInterval,
+  onChangeRefreshInterval,
+  systemStatus
 }: DashboardHeaderProps) {
   const [time, setTime] = useState<string>('');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -94,8 +106,8 @@ export default function DashboardHeader({
           </button>
         </div>
 
-        {/* Dynamic Clock & Alert status */}
-        <div className="flex items-center gap-3 sm:gap-6 text-sm flex-wrap justify-center">
+        {/* Dynamic Clock, Alert status & Telemetry Sync Panel */}
+        <div className="flex items-center gap-3 sm:gap-5 text-sm flex-wrap justify-center flex-grow md:justify-center max-w-full md:max-w-2xl">
           <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono tracking-widest uppercase">LOCAL {time}</span>
@@ -104,9 +116,75 @@ export default function DashboardHeader({
           {activeAlertsCount > 0 && (
             <div className="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/20 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/30 text-rose-700 dark:text-rose-400 font-medium text-xs">
               <ShieldAlert className="h-4 w-4 animate-bounce" />
-              <span>{activeAlertsCount} Active Incidents</span>
+              <span className="hidden xs:inline">{activeAlertsCount} Active Incidents</span>
+              <span className="xs:hidden">{activeAlertsCount} Alerts</span>
             </div>
           )}
+
+          {/* Telemetry Sync Panel */}
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            {/* Connection Status Badge */}
+            <div className={`flex items-center gap-1.5 px-2 py-1 sm:py-1.5 rounded-lg border text-xs font-semibold ${
+              systemStatus === 'live'
+                ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-250 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                : systemStatus === 'cached'
+                ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-250 dark:border-amber-900/30 text-amber-700 dark:text-amber-400'
+                : 'bg-blue-50 dark:bg-blue-950/20 border-blue-250 dark:border-blue-900/30 text-blue-700 dark:text-blue-400'
+            }`} title={systemStatus === 'live' ? 'Connected to live REST services' : systemStatus === 'cached' ? 'Running on cached backups' : 'Running on simulated engine'}>
+              {systemStatus === 'live' ? (
+                <>
+                  <Wifi className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Live Telemetry</span>
+                  <span className="sm:hidden">Live</span>
+                </>
+              ) : systemStatus === 'cached' ? (
+                <>
+                  <Database className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Cached Telemetry</span>
+                  <span className="sm:hidden">Cached</span>
+                </>
+              ) : (
+                <>
+                  <Activity className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="hidden sm:inline">Simulated Engine</span>
+                  <span className="sm:hidden">Sim</span>
+                </>
+              )}
+            </div>
+
+            {/* Last Updated Timestamp */}
+            {lastUpdated && (
+              <div className="text-[10px] sm:text-xs text-zinc-500 font-mono" title="Last telemetry update timestamp">
+                Sync: {lastUpdated.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+              </div>
+            )}
+
+            {/* Refresh Live Data Button */}
+            <button
+              onClick={onRefresh}
+              disabled={refreshing}
+              className="p-1.5 sm:p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 disabled:opacity-50 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-lg flex items-center justify-center transition-colors min-h-[32px] min-w-[32px]"
+              title="Refresh Live Data"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+
+            {/* Auto Refresh Dropdown */}
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs">
+              <Timer className="h-3.5 w-3.5 text-zinc-400" />
+              <select
+                value={refreshInterval}
+                onChange={(e) => onChangeRefreshInterval(parseInt(e.target.value))}
+                className="bg-transparent border-0 text-xs font-mono text-zinc-600 dark:text-zinc-400 focus:ring-0 focus:outline-none pr-6 py-0 cursor-pointer"
+                title="Auto Refresh Interval"
+              >
+                <option value={0}>Sync: Off</option>
+                <option value={60}>Sync: 1m</option>
+                <option value={300}>Sync: 5m</option>
+                <option value={900}>Sync: 15m</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Theme, Persona select, Logout */}
