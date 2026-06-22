@@ -18,17 +18,15 @@ export default function DashboardHeader({
   const [time, setTime] = useState<string>('');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
-  // Singapore timezone clock
+  // Local browser clock
   useEffect(() => {
     const updateTime = () => {
-      const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Singapore',
+      setTime(new Date().toLocaleTimeString(undefined, {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
         hour12: false
-      };
-      setTime(new Date().toLocaleTimeString('en-SG', options));
+      }));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -97,7 +95,7 @@ export default function DashboardHeader({
         <div className="flex items-center gap-6 text-sm flex-wrap justify-center">
           <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono tracking-widest uppercase">SGT {time}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono tracking-widest uppercase">LOCAL {time}</span>
           </div>
 
           {activeAlertsCount > 0 && (

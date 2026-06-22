@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import LandingPage from '../components/LandingPage';
 import DashboardHeader from '../components/DashboardHeader';
+import LocationBanner from '../components/LocationBanner';
 import KpiGrid from '../components/KpiGrid';
 import InteractiveMap from '../components/InteractiveMap';
 import AnalyticsCharts from '../components/AnalyticsCharts';
@@ -10,36 +11,85 @@ import CopilotPanel from '../components/CopilotPanel';
 import AlertsPanel from '../components/AlertsPanel';
 import ReportGenerator from '../components/ReportGenerator';
 
-import { getSingaporeData, getActiveAlerts, getStaticRecommendations } from '../services/mockData';
-import { RegionData, Alert, Recommendation, UserPersona, Resource } from '../types';
-import { Check, ClipboardList, ShieldAlert, Heart, Building, Info } from 'lucide-react';
+import { locationService } from '../services/locationService';
+import { getLocalizedData, getActiveAlerts, getStaticRecommendations, DEFAULT_LOCATION } from '../services/mockData';
+import { RegionData, UserLocation, UserPersona } from '../types';
+import { ClipboardList, Building, Heart, Info } from 'lucide-react';
 
 export default function Home() {
   const [activeView, setActiveView] = useState<'landing' | 'dashboard'>('landing');
   const [persona, setPersona] = useState<UserPersona>('citizen');
-  const [selectedRegionId, setSelectedRegionId] = useState<string>('central');
+  const [selectedRegionId, setSelectedRegionId] = useState<string>('downtown');
+  
+  // Location States
+  const [currentLocation, setCurrentLocation] = useState<UserLocation | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [regionsData, setRegionsData] = useState<RegionData[]>([]);
 
-  // Initialize data on mount
+  // Resolve location on component mount
   useEffect(() => {
-    setRegionsData(getSingaporeData());
+    const initLocation = async () => {
+      setLocationLoading(true);
+      setLocationError(null);
+      try {
+        // Automatically checks Cache -> GPS -> IP -> Fallback
+        const resolved = await locationService.resolveLocation();
+        setCurrentLocation(resolved);
+        setRegionsData(getLocalizedData(resolved));
+      } catch (err: any) {
+        console.error('Initial location resolution failed, loading default:', err);
+        setLocationError(err.message || 'Could not detect location. Using Singapore default.');
+        // Fallback to default
+        setCurrentLocation(DEFAULT_LOCATION);
+        setRegionsData(getLocalizedData(DEFAULT_LOCATION));
+      } finally {
+        setLocationLoading(false);
+      }
+    };
+    initLocation();
   }, []);
+
+  const handleSearchCity = async (cityName: string): Promise<boolean> => {
+    try {
+      const location = await locationService.searchCity(cityName);
+      setCurrentLocation(location);
+      setRegionsData(getLocalizedData(location));
+      setSelectedRegionId('downtown'); // Reset to downtown of new city
+      return true;
+    } catch (e) {
+      console.error('City search failed:', e);
+      return false;
+    }
+  };
+
+  const handleTriggerGps = async () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    try {
+      const location = await locationService.detectBrowserLocation();
+      setCurrentLocation(location);
+      setRegionsData(getLocalizedData(location));
+      setSelectedRegionId('downtown');
+    } catch (e: any) {
+      console.error('GPS trigger failed:', e);
+      setLocationError(e.message || 'Location access denied.');
+      throw e;
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   if (regionsData.length === 0) {
     return (
       <div className="min-h-screen bg-[#09090b] flex items-center justify-center font-mono text-xs text-zinc-500">
-        Loading System Telemetry...
+        Loading Local Telemetry...
       </div>
     );
   }
 
-  // Active region data
   const activeRegion = regionsData.find((r) => r.id === selectedRegionId) || regionsData[0];
-
-  // Dynamic alerts list
   const activeAlerts = getActiveAlerts(regionsData);
-
-  // Recommendations for the selected region
   const recommendations = getStaticRecommendations(selectedRegionId, regionsData);
 
   const handleEnterDashboard = (selectedPersona: UserPersona) => {
@@ -48,18 +98,24 @@ export default function Home() {
   };
 
   const handleExitDashboard = () => {
-    // Reset data
-    setRegionsData(getSingaporeData());
+    locationService.clearCachedLocation();
+    // Re-resolve location
+    locationService.resolveLocation(true).then((loc) => {
+      setCurrentLocation(loc);
+      setRegionsData(getLocalizedData(loc));
+    }).catch(() => {
+      setCurrentLocation(DEFAULT_LOCATION);
+      setRegionsData(getLocalizedData(DEFAULT_LOCATION));
+    });
     setActiveView('landing');
   };
 
-  // Closed-loop simulation: executing an action affects the data and updates the dashboard
   const handleExecuteAction = (regionId: string, actionTitle: string) => {
+    const activeCity = currentLocation?.city || 'Local';
     setRegionsData((prevData) =>
       prevData.map((region) => {
         if (region.id !== regionId) return region;
 
-        // Clone current resources
         const updatedResources = [...region.resourcesDeployed];
         let newAqi = region.aqi;
         let newTemp = region.temperature;
@@ -69,48 +125,41 @@ export default function Home() {
         const actionLower = actionTitle.toLowerCase();
         
         if (actionLower.includes('air purification')) {
-          // Add Air purification asset
           updatedResources.push({
             id: `deployed-aqi-${Date.now()}`,
-            name: 'EcoSensing Air Scrubber Grid X3',
+            name: `${activeRegion.name.split(' ')[0]} Air Scrubber Grid`,
             type: 'air-purifier',
             status: 'active',
-            location: 'Boon Lay HDB Clusters',
+            location: `${activeCity} Industrial Sector`,
             quantity: 3
           });
-          // Drop AQI significantly
-          newAqi = Math.round(newAqi * 0.55); // 45% reduction
-          newHealth = Math.round(newHealth * 0.75); // 25% drop in clinic pressure
+          newAqi = Math.round(newAqi * 0.55);
+          newHealth = Math.round(newHealth * 0.75);
         } else if (actionLower.includes('heat shelter') || actionLower.includes('cooling')) {
-          // Add Cooling shelter asset
           updatedResources.push({
             id: `deployed-heat-${Date.now()}`,
-            name: 'Woodlands Community CC Cooling Oasis',
+            name: `${activeRegion.name.split(' ')[0]} Cooling Oasis`,
             type: 'cooling-center',
             status: 'active',
-            location: 'Woodlands Civic Plaza',
+            location: `${activeCity} Residential Suburb`,
             quantity: 2
           });
-          // Drop temperature/comfort risk
           newTemp = Number((newTemp - 1.8).toFixed(1));
-          newHealth = Math.round(newHealth * 0.70); // 30% drop in heat exhaustion cases
+          newHealth = Math.round(newHealth * 0.70);
         } else if (actionLower.includes('traffic') || actionLower.includes('rerouting')) {
-          // Add Traffic Patrol units
           updatedResources.push({
             id: `deployed-traffic-${Date.now()}`,
-            name: 'Auxiliary Patrol Team Delta',
+            name: `${activeRegion.name.split(' ')[0]} Traffic Patrol`,
             type: 'traffic-patrol',
             status: 'active',
-            location: 'Shenton Way Intersections',
+            location: `${activeCity} Transit Corridor`,
             quantity: 3
           });
-          // Drop traffic congestion
-          newTraffic = Math.round(newTraffic * 0.50); // 50% drop
+          newTraffic = Math.round(newTraffic * 0.50);
         } else {
-          // General deployment
           updatedResources.push({
             id: `deployed-gen-${Date.now()}`,
-            name: 'Emergency Support Unit',
+            name: `Emergency Response Squad`,
             type: 'public-transit',
             status: 'active',
             location: 'Regional Hub',
@@ -147,6 +196,8 @@ export default function Home() {
     return <LandingPage onEnter={handleEnterDashboard} />;
   }
 
+  const activeLocationObj = currentLocation || DEFAULT_LOCATION;
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] transition-colors flex flex-col justify-between">
       <div>
@@ -158,6 +209,15 @@ export default function Home() {
         />
 
         <main className="max-w-[1600px] mx-auto px-6 py-6 flex flex-col gap-6">
+          {/* Location Search / Status Banner */}
+          <LocationBanner
+            currentLocation={currentLocation}
+            loading={locationLoading}
+            error={locationError}
+            onSearchCity={handleSearchCity}
+            onTriggerGps={handleTriggerGps}
+          />
+
           {/* Persona Header Info Banner */}
           <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm transition-colors">
             <div className="flex items-center gap-3">
@@ -178,7 +238,7 @@ export default function Home() {
               )}
               <div>
                 <h2 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 capitalize">
-                  Singapore Operations Panel: {activeRegion.name}
+                  Operations Panel: {activeRegion.name}
                 </h2>
                 <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                   {persona === 'admin' 
@@ -203,7 +263,7 @@ export default function Home() {
                       : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
                   }`}
                 >
-                  {reg.name.split(' ')[0]}
+                  {reg.name.replace(currentLocation?.city || 'Local', '').trim()}
                 </button>
               ))}
             </div>
@@ -222,14 +282,13 @@ export default function Home() {
             {/* Column 1 & 2: Map and Analytics */}
             <div className="xl:col-span-2 flex flex-col gap-6">
               
-              {/* Interactive map */}
               <InteractiveMap
                 regions={regionsData}
                 selectedRegionId={selectedRegionId}
                 onSelectRegion={setSelectedRegionId}
+                userCoords={[activeLocationObj.latitude, activeLocationObj.longitude]}
               />
 
-              {/* Historical Trend Charts */}
               <AnalyticsCharts region={activeRegion} />
               
             </div>
@@ -239,12 +298,13 @@ export default function Home() {
               <CopilotPanel
                 activeRegion={activeRegion}
                 persona={persona}
+                userLocation={activeLocationObj}
               />
             </div>
 
           </div>
 
-          {/* Bottom Row: Active Alerts and Recommendations */}
+          {/* Alerts and Recommendations */}
           <AlertsPanel
             alerts={activeAlerts}
             recommendations={recommendations}
@@ -257,9 +317,10 @@ export default function Home() {
             regions={regionsData}
             alerts={activeAlerts}
             recommendations={recommendations}
+            location={activeLocationObj}
           />
 
-          {/* Deployed Active Resources Inventory (Admin/NGO only) */}
+          {/* Deployed Active Resources Inventory */}
           {(persona === 'admin' || persona === 'ngo') && (
             <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm transition-colors">
               <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50 flex items-center gap-2 mb-4">
@@ -267,35 +328,38 @@ export default function Home() {
                 Active Deployed Assets &amp; Resources
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {activeRegion.resourcesDeployed.map((res) => (
-                  <div key={res.id} className="border border-zinc-200 dark:border-zinc-850 p-3 rounded-lg flex justify-between items-center text-xs">
-                    <div>
-                      <h4 className="font-bold text-zinc-950 dark:text-zinc-150">{res.name}</h4>
-                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5 capitalize">Type: {res.type.replace('-', ' ')}</p>
-                      <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">Location: {res.location}</p>
+              {activeRegion.resourcesDeployed.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {activeRegion.resourcesDeployed.map((res) => (
+                    <div key={res.id} className="border border-zinc-200 dark:border-zinc-850 p-3 rounded-lg flex justify-between items-center text-xs">
+                      <div>
+                        <h4 className="font-bold text-zinc-950 dark:text-zinc-150">{res.name}</h4>
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5 capitalize">Type: {res.type.replace('-', ' ')}</p>
+                        <p className="text-[10px] text-zinc-505 mt-0.5 font-mono">Location: {res.location}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="bg-blue-950/40 text-blue-400 px-1.5 py-0.5 rounded text-[9px] border border-blue-900/30 font-bold font-mono">
+                          QTY: {res.quantity}
+                        </span>
+                        <span className="block text-[8px] text-emerald-400 font-bold uppercase mt-1 font-mono">
+                          {res.status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="bg-blue-950/40 text-blue-400 px-1.5 py-0.5 rounded text-[9px] border border-blue-900/30 font-bold font-mono">
-                        QTY: {res.quantity}
-                      </span>
-                      <span className="block text-[8px] text-emerald-400 font-bold uppercase mt-1 font-mono">
-                        {res.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-zinc-500 text-xs font-mono">No active assets deployed in this sector.</div>
+              )}
             </div>
           )}
 
         </main>
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 py-5 text-center text-xs text-zinc-500 font-mono flex flex-col sm:flex-row justify-between items-center px-6 gap-3">
         <span>© 2026 CommunityPulse AI. APAC Gen AI Challenge.</span>
-        <span>Secure Sandboxed Environment // Grounding Mode Enabled</span>
+        <span>Secure Geolocation API // Local RAG Active</span>
       </footer>
     </div>
   );

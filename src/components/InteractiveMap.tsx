@@ -19,12 +19,14 @@ interface InteractiveMapProps {
   regions: RegionData[];
   selectedRegionId: string | null;
   onSelectRegion: (id: string) => void;
+  userCoords: [number, number];
 }
 
 export default function InteractiveMap({
   regions,
   selectedRegionId,
-  onSelectRegion
+  onSelectRegion,
+  userCoords
 }: InteractiveMapProps) {
   const [mapMode, setMapMode] = useState<'schematic' | 'geographic'>('schematic');
   const [activeLayer, setActiveLayer] = useState<'risk' | 'aqi' | 'traffic' | 'health'>('risk');
@@ -49,14 +51,20 @@ export default function InteractiveMap({
     }
   };
 
+  const regResidential = regions.find(r => r.id === 'residential') || regions[0];
+  const regIndustrial = regions.find(r => r.id === 'industrial') || regions[0];
+  const regDowntown = regions.find(r => r.id === 'downtown') || regions[0];
+  const regInnovation = regions.find(r => r.id === 'innovation') || regions[0];
+
   return (
     <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-5 flex flex-col h-full min-h-[420px] transition-colors">
+      
       {/* Map Control Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800/60 pb-4 mb-4">
         <div>
           <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
             <Map className="h-4.5 w-4.5 text-blue-500" />
-            Live Geographic Operations
+            Live Operations Mapping
           </h3>
           <p className="text-xs text-zinc-400 dark:text-zinc-500">Monitor regional hot spots and deploy emergency resources.</p>
         </div>
@@ -116,12 +124,13 @@ export default function InteractiveMap({
             selectedRegionId={selectedRegionId}
             onSelectRegion={onSelectRegion}
             activeLayer={activeLayer}
+            userCoords={userCoords}
           />
         ) : (
           /* Custom Schematic Singapore Vector Map */
           <div className="relative w-full h-full bg-zinc-50 dark:bg-[#08080a] flex items-center justify-center p-4">
             {/* Legend Overlay */}
-            <div className="absolute top-3 left-3 bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-850 rounded-lg p-2 shadow-sm text-[10px] font-mono flex flex-col gap-1">
+            <div className="absolute top-3 left-3 bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-850 rounded-lg p-2 shadow-sm text-[10px] font-mono flex flex-col gap-1 z-10">
               <span className="text-zinc-400 font-bold uppercase tracking-wider text-[8px]">Overlay: {getOverlayLabel()}</span>
               {regions.map(r => {
                 let scoreText = '';
@@ -136,81 +145,80 @@ export default function InteractiveMap({
                       r.id === selectedRegionId ? 'bg-blue-500 ring-2 ring-blue-500/20' : 'bg-zinc-500'
                     }`} />
                     <span className={`${r.id === selectedRegionId ? 'text-blue-500 font-bold' : 'text-zinc-600 dark:text-zinc-400'}`}>
-                      {r.name.split(' ')[0]}: {scoreText}
+                      {r.name.replace(/(Downtown|Industrial Zone|Residential Suburb|Marina Waterfront|Innovation Tech Park)/g, '').trim() || r.id.toUpperCase()}: {scoreText}
                     </span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Singapore Schematic SVG Grid */}
+            {/* Schematic SVG Grid */}
             <svg 
               viewBox="0 0 500 280" 
               className="w-full max-w-[460px] h-auto drop-shadow-lg"
               strokeLinejoin="round" 
               strokeLinecap="round"
             >
-              {/* WOODLANDS (NORTH) */}
+              {/* RESIDENTIAL SUBURB (top/north) */}
               <path
                 d="M 170 50 L 320 50 L 300 110 L 220 110 L 170 80 Z"
                 className={`transition-all duration-300 cursor-pointer stroke-2 ${
-                  selectedRegionId === 'woodlands' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
-                } ${getRiskColor(regions.find(r => r.id === 'woodlands')!, activeLayer)}`}
-                onClick={() => onSelectRegion('woodlands')}
+                  selectedRegionId === 'residential' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
+                } ${getRiskColor(regResidential, activeLayer)}`}
+                onClick={() => onSelectRegion('residential')}
               />
-              <text x="245" y="80" className="fill-zinc-800 dark:fill-zinc-400 font-mono text-[9px] font-bold text-center pointer-events-none" textAnchor="middle">
-                WOODLANDS
+              <text x="245" y="80" className="fill-zinc-800 dark:fill-zinc-450 font-mono text-[8px] font-bold text-center pointer-events-none" textAnchor="middle">
+                {regResidential.name.toUpperCase()}
               </text>
 
-              {/* JURONG (WEST) */}
+              {/* INDUSTRIAL (left/west) */}
               <path
                 d="M 40 100 L 170 80 L 220 110 L 190 190 L 110 190 L 40 160 Z"
                 className={`transition-all duration-300 cursor-pointer stroke-2 ${
-                  selectedRegionId === 'jurong' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
-                } ${getRiskColor(regions.find(r => r.id === 'jurong')!, activeLayer)}`}
-                onClick={() => onSelectRegion('jurong')}
+                  selectedRegionId === 'industrial' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
+                } ${getRiskColor(regIndustrial, activeLayer)}`}
+                onClick={() => onSelectRegion('industrial')}
               />
-              <text x="120" y="140" className="fill-zinc-800 dark:fill-zinc-400 font-mono text-[9px] font-bold pointer-events-none" textAnchor="middle">
-                JURONG INDUSTRIAL
+              <text x="120" y="140" className="fill-zinc-800 dark:fill-zinc-450 font-mono text-[8px] font-bold pointer-events-none" textAnchor="middle">
+                {regIndustrial.name.toUpperCase()}
               </text>
 
-              {/* CENTRAL (SOUTH) */}
+              {/* DOWNTOWN (center/south) */}
               <path
                 d="M 190 190 L 220 110 L 300 110 L 340 160 L 310 220 L 220 220 Z"
                 className={`transition-all duration-300 cursor-pointer stroke-2 ${
-                  selectedRegionId === 'central' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
-                } ${getRiskColor(regions.find(r => r.id === 'central')!, activeLayer)}`}
-                onClick={() => onSelectRegion('central')}
+                  selectedRegionId === 'downtown' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
+                } ${getRiskColor(regDowntown, activeLayer)}`}
+                onClick={() => onSelectRegion('downtown')}
               />
-              <text x="260" y="170" className="fill-zinc-800 dark:fill-zinc-400 font-mono text-[9px] font-bold pointer-events-none" textAnchor="middle">
-                CENTRAL AREA
+              <text x="260" y="170" className="fill-zinc-800 dark:fill-zinc-450 font-mono text-[8px] font-bold pointer-events-none" textAnchor="middle">
+                {regDowntown.name.toUpperCase()}
               </text>
 
-              {/* CHANGI (EAST) */}
+              {/* TECH PARK / MARINA (right/east) */}
               <path
                 d="M 320 50 L 440 90 L 460 140 L 380 180 L 340 160 L 300 110 Z"
                 className={`transition-all duration-300 cursor-pointer stroke-2 ${
-                  selectedRegionId === 'changi' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
-                } ${getRiskColor(regions.find(r => r.id === 'changi')!, activeLayer)}`}
-                onClick={() => onSelectRegion('changi')}
+                  selectedRegionId === 'innovation' ? 'stroke-blue-500 fill-blue-500/10 stroke-3 scale-[1.01]' : 'stroke-zinc-400 dark:stroke-zinc-800'
+                } ${getRiskColor(regInnovation, activeLayer)}`}
+                onClick={() => onSelectRegion('innovation')}
               />
-              <text x="375" y="125" className="fill-zinc-800 dark:fill-zinc-400 font-mono text-[9px] font-bold pointer-events-none" textAnchor="middle">
-                CHANGI
+              <text x="375" y="125" className="fill-zinc-800 dark:fill-zinc-450 font-mono text-[8px] font-bold pointer-events-none" textAnchor="middle">
+                {regInnovation.name.toUpperCase()}
               </text>
 
               {/* Dynamic status indicators */}
               {regions.map((region) => {
                 let x = 0, y = 0;
-                if (region.id === 'woodlands') { x = 245; y = 92; }
-                else if (region.id === 'jurong') { x = 120; y = 152; }
-                else if (region.id === 'central') { x = 260; y = 182; }
-                else if (region.id === 'changi') { x = 375; y = 137; }
+                if (region.id === 'residential') { x = 245; y = 92; }
+                else if (region.id === 'industrial') { x = 120; y = 152; }
+                else if (region.id === 'downtown') { x = 260; y = 182; }
+                else if (region.id === 'innovation') { x = 375; y = 137; }
 
-                const isCrit = region.aqi > 130 || region.temperature > 34.5 || region.trafficCongestion > 80;
+                const isCrit = region.aqi > 100 || region.temperature > 34.0 || region.trafficCongestion > 70;
                 
                 return (
                   <g key={region.id} className="pointer-events-none">
-                    {/* Ring for alerts */}
                     {isCrit && (
                       <circle 
                         cx={x} 
@@ -223,7 +231,7 @@ export default function InteractiveMap({
                       cx={x} 
                       cy={y} 
                       r="3.5" 
-                      className={`${isCrit ? 'fill-rose-500' : 'fill-zinc-400 dark:fill-zinc-600'}`} 
+                      className={`${isCrit ? 'fill-rose-500' : 'fill-zinc-400 dark:fill-zinc-650'}`} 
                     />
                   </g>
                 );

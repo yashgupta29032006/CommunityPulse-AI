@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { FileText, Download, Check, HelpCircle, X, Sparkles } from 'lucide-react';
-import { RegionData, Alert, Recommendation } from '../types';
+import { FileText, Download, X } from 'lucide-react';
+import { RegionData, Alert, Recommendation, UserLocation } from '../types';
 
 interface ReportGeneratorProps {
   regions: RegionData[];
   alerts: Alert[];
   recommendations: Recommendation[];
+  location: UserLocation;
 }
 
-export default function ReportGenerator({ regions, alerts, recommendations }: ReportGeneratorProps) {
+export default function ReportGenerator({ regions, alerts, recommendations, location }: ReportGeneratorProps) {
   const [showPreview, setShowPreview] = useState(false);
-  const [reportTitle, setReportTitle] = useState('Singapore Daily Situation Executive Brief');
+  const cityName = location.city || 'Local Area';
+  const countryName = location.country || 'Global';
+  
+  const [reportTitle, setReportTitle] = useState(`${cityName} Daily Situation Executive Brief`);
   const [sections, setSections] = useState({
     summary: true,
     regionalData: true,
@@ -19,7 +23,6 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
   });
 
   const handlePrint = () => {
-    // Hide dashboard elements momentarily and trigger print window
     window.print();
   };
 
@@ -27,7 +30,7 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
     <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-5 transition-colors mb-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex gap-3">
-          <div className="p-2 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-255 dark:border-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400 h-fit">
+          <div className="p-2 bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-250 dark:border-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400 h-fit">
             <FileText className="h-5 w-5" />
           </div>
           <div>
@@ -40,7 +43,11 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
         </div>
         
         <button
-          onClick={() => setShowPreview(true)}
+          onClick={() => {
+            // Recalculate title dynamically if geolocated city changed
+            setReportTitle(`${cityName} Daily Situation Executive Brief`);
+            setShowPreview(true);
+          }}
           className="w-full sm:w-auto bg-[#059669] hover:bg-[#047857] text-[#000000] font-extrabold rounded-lg px-4 py-2 text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5"
         >
           <Download className="h-4 w-4" />
@@ -67,7 +74,7 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
               </button>
             </div>
 
-            {/* Selection Options & Settings */}
+            {/* Settings */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-900/50 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">Document Title</label>
@@ -125,36 +132,36 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
             <div id="printable-report" className="flex-grow overflow-y-auto p-8 bg-white text-zinc-950 font-sans print:p-0 print:overflow-visible">
               <div className="max-w-[750px] mx-auto flex flex-col gap-6">
                 
-                {/* Printable Header */}
+                {/* Header */}
                 <div className="border-b-4 border-zinc-900 pb-5 flex justify-between items-end">
                   <div>
                     <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900">{reportTitle}</h1>
-                    <p className="text-xs text-zinc-500 mt-1 font-mono uppercase">CONFIDENTIAL // Singapore Operations Management</p>
+                    <p className="text-xs text-zinc-500 mt-1 font-mono uppercase">CONFIDENTIAL // {cityName.toUpperCase()} OPERATIONS CENTER</p>
                   </div>
                   <div className="text-right text-xs text-zinc-500 font-mono">
-                    <div>Date: {new Date().toLocaleDateString('en-SG', { dateStyle: 'medium' })}</div>
-                    <div>Time: {new Date().toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div>Date: {new Date().toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+                    <div>Location: {cityName}, {countryName}</div>
                   </div>
                 </div>
 
-                {/* Section 1: Executive Summary */}
+                {/* Summary */}
                 {sections.summary && (
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">I. Executive Situation Summary</h2>
                     <p className="text-xs text-zinc-650 leading-relaxed">
-                      This operational brief compiles real-time sensing data across Singapore. Active hotspots include elevated particulate matter concentrations in the Western Industrial sector (Jurong) and high thermal indicators combined with aging demographics in the Northern residential sector (Woodlands). Eastern and Central sectors display stable baseline scores. Corrective action is ongoing.
+                      This operational brief compiles real-time sensing data across the **{cityName}** municipality. Key focus regions include elevated industrial emissions in the Industrial Zone, and thermal warning levels tracked in the residential sector. Mobility networks, transit delay ratios, and clinic pressure metrics are summarized below. Corrective protocols are active.
                     </p>
                   </div>
                 )}
 
-                {/* Section 2: Regional Metrics Summary */}
+                {/* Regional Metrics */}
                 {sections.regionalData && (
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">II. Regional Telemetry</h2>
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="border-b-2 border-zinc-800 bg-zinc-50">
-                          <th className="py-2 px-1">Region</th>
+                          <th className="py-2 px-1">Sector</th>
                           <th className="py-2 px-1 text-center">AQI</th>
                           <th className="py-2 px-1 text-center">Temp (°C)</th>
                           <th className="py-2 px-1 text-center">Traffic (%)</th>
@@ -180,10 +187,10 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
                   </div>
                 )}
 
-                {/* Section 3: Active Alerts */}
+                {/* Active Alerts */}
                 {sections.alerts && (
                   <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">III. Active Anomalies</h2>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">III. Localized Alerts</h2>
                     <div className="flex flex-col gap-2">
                       {alerts.length > 0 ? (
                         alerts.map((a) => (
@@ -192,8 +199,8 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
                               <span>{a.regionName} - {a.type.toUpperCase()}</span>
                               <span className="uppercase text-[9px] px-1 bg-zinc-200 rounded">{a.severity}</span>
                             </div>
-                            <p className="text-zinc-600 mt-1 text-[11px]">{a.message}</p>
-                            <p className="text-[10px] text-zinc-500 italic mt-1">Recommended Response: {a.suggestedAction}</p>
+                            <p className="text-zinc-650 mt-1 text-[11px]">{a.message}</p>
+                            <p className="text-[10px] text-zinc-505 italic mt-1">Recommended Response: {a.suggestedAction}</p>
                           </div>
                         ))
                       ) : (
@@ -203,7 +210,7 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
                   </div>
                 )}
 
-                {/* Section 4: AI Decision Recommendations */}
+                {/* Recommendations */}
                 {sections.decisions && (
                   <div>
                     <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-800 border-b border-zinc-300 pb-1 mb-2">IV. AI Grounded Action Protocols</h2>
@@ -231,7 +238,7 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
                 <div className="border-t border-zinc-400 mt-8 pt-4 text-center text-[10px] text-zinc-500 font-mono">
                   Report generated automatically by CommunityPulse Decision Intelligence Engine.
                   <br />
-                  NEA Sensors and LTA Transit Data grounded.
+                  Local IoT sensors and dynamic city transit feeds grounded.
                 </div>
 
               </div>
@@ -249,7 +256,6 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
                 onClick={handlePrint}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-extrabold shadow-sm flex items-center gap-1.5"
               >
-                <Download className="h-4 w-4" />
                 Print / Save PDF
               </button>
             </div>
@@ -258,7 +264,6 @@ export default function ReportGenerator({ regions, alerts, recommendations }: Re
         </div>
       )}
 
-      {/* Global CSS to handle printing of the printable area only */}
       <style jsx global>{`
         @media print {
           body * {

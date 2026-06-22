@@ -1,54 +1,60 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Brain, AlertCircle, ChevronDown, ChevronUp, Loader } from 'lucide-react';
-import { ChatMessage, RegionData, UserPersona } from '../types';
+import { Send, Bot, User, Brain, Loader, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChatMessage, RegionData, UserPersona, UserLocation } from '../types';
 
 interface CopilotPanelProps {
   activeRegion: RegionData;
   persona: UserPersona;
+  userLocation: UserLocation;
 }
 
-export default function CopilotPanel({ activeRegion, persona }: CopilotPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `Hello! I am **PulseCopilot**, Singapore's Decision Intelligence Assistant. I am grounded in real-time air quality indicators, traffic sensors, weather reports, and citizen complaints. 
-
-How can I help you analyze trends or allocate resources today?`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
+export default function CopilotPanel({ activeRegion, persona, userLocation }: CopilotPanelProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Set welcome message dynamically based on geolocated city
+  useEffect(() => {
+    const cityName = userLocation.city || 'your area';
+    setMessages([
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: `Hello! I am **PulseCopilot**, your Decision Intelligence Assistant for **${cityName}**. I am grounded in local air quality indicators, transit sensors, weather reports, and citizen complaints. 
+
+How can I help you analyze trends or allocate resources in this sector today?`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  }, [userLocation.city]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Suggested questions based on persona and region
   const getSuggestions = () => {
     const rName = activeRegion.name.split(' ')[0];
     if (persona === 'admin') {
       return [
         `Assess emergency resources for ${rName}`,
-        `What alerts are active in Singapore right now?`,
-        `Summarize today's executive recommendations`
+        `What alerts are active right now?`,
+        `Summarize today's recommendations`
       ];
     } else if (persona === 'ngo') {
       return [
-        `Which communities in ${rName} are vulnerable to heat?`,
+        `Which communities in ${rName} are vulnerable?`,
         `Draft an air quality health report for ${rName}`,
         `Analyze citizen complaint sentiment`
       ];
     } else {
       return [
         `Is the air quality safe in ${rName} today?`,
-        `What are the traffic conditions in Central Area?`,
+        `What are the traffic conditions in ${rName}?`,
         `Explain how risk scores are calculated`
       ];
     }
@@ -75,7 +81,8 @@ How can I help you analyze trends or allocate resources today?`,
         body: JSON.stringify({
           messages: [...messages, userMsg],
           regionId: activeRegion.id,
-          persona: persona
+          persona: persona,
+          userLocation: userLocation
         })
       });
 
@@ -91,7 +98,6 @@ How can I help you analyze trends or allocate resources today?`,
 
       setMessages(prev => [...prev, assistantMsg]);
       
-      // Auto expand explainability for the latest response
       if (data.explainability) {
         setExpandedMessageId(assistantMsg.id);
       }
@@ -123,7 +129,7 @@ How can I help you analyze trends or allocate resources today?`,
             PulseCopilot AI
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Grounding Active</span>
           </h3>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500">Query Singapore's live data in natural language.</p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">Query local operations data in natural language.</p>
         </div>
       </div>
 
@@ -133,20 +139,17 @@ How can I help you analyze trends or allocate resources today?`,
           <div key={msg.id} className="flex flex-col gap-2">
             <div className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               
-              {/* Bot Avatar */}
               {msg.role === 'assistant' && (
                 <div className="h-8 w-8 rounded-full bg-blue-600/10 text-blue-500 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
                   <Bot className="h-4 w-4" />
                 </div>
               )}
 
-              {/* Message Bubble */}
               <div className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed border transition-colors ${
                 msg.role === 'user'
                   ? 'bg-zinc-900 border-zinc-800 text-white dark:bg-zinc-900 dark:border-zinc-800'
                   : 'bg-zinc-50 border-zinc-200 dark:bg-[#121217]/50 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-250'
               }`}>
-                {/* Basic Markdown rendering */}
                 <div className="prose prose-sm dark:prose-invert max-w-none space-y-2">
                   {msg.content.split('\n').map((line, idx) => {
                     if (line.startsWith('### ')) {
@@ -155,7 +158,6 @@ How can I help you analyze trends or allocate resources today?`,
                     if (line.startsWith('* ') || line.startsWith('- ')) {
                       return <li key={idx} className="list-disc ml-4 text-xs">{line.substring(2)}</li>;
                     }
-                    // Handle bold markdown
                     const parts = line.split(/(\*\*.*?\*\*)/g);
                     return (
                       <p key={idx} className="text-xs">
@@ -174,7 +176,6 @@ How can I help you analyze trends or allocate resources today?`,
                 </div>
               </div>
 
-              {/* User Avatar */}
               {msg.role === 'user' && (
                 <div className="h-8 w-8 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center justify-center flex-shrink-0">
                   <User className="h-4 w-4" />
@@ -183,7 +184,6 @@ How can I help you analyze trends or allocate resources today?`,
 
             </div>
 
-            {/* Explainability Accordion */}
             {msg.role === 'assistant' && msg.explainability && (
               <div className="ml-11 max-w-[85%] bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/60 rounded-lg p-2.5">
                 <button
@@ -235,14 +235,14 @@ How can I help you analyze trends or allocate resources today?`,
               <Loader className="h-4 w-4" />
             </div>
             <div className="bg-zinc-50 border border-zinc-200 dark:bg-[#121217]/50 dark:border-zinc-800/80 rounded-xl px-4 py-2 text-xs font-mono text-zinc-500">
-              PulseCopilot is reasoning over retrieved Singapore context...
+              PulseCopilot is reasoning over local context...
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Questions (Pills) */}
+      {/* Suggested Questions */}
       <div className="mb-3">
         <div className="flex flex-wrap gap-1.5">
           {getSuggestions().map((sug, idx) => (
@@ -269,7 +269,7 @@ How can I help you analyze trends or allocate resources today?`,
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask PulseCopilot about Singapore AQI, heat indices, transit delay or summaries..."
+          placeholder={`Ask PulseCopilot about ${userLocation.city || 'local'} AQI, temperature, transit or alerts...`}
           className="flex-grow bg-zinc-50 dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         />
         <button

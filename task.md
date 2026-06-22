@@ -1,31 +1,20 @@
-# Tasks: CommunityPulse AI Implementation
+# Tasks: CommunityPulse AI Geolocation Refactor
 
-- [x] Project Setup
-  - [x] Initialize Next.js app with TypeScript, Tailwind CSS, App Router
-  - [x] Install dependencies (`lucide-react`, `recharts`, `leaflet`, `react-leaflet`, `@google/genai`)
-  - [x] Configure global styles and theme variables
-- [x] Core Data & Service Layer
-  - [x] Define TypeScript types (`src/types/index.ts`)
-  - [x] Implement Singapore datasets for Changi, Jurong Industrial, Central Area, Woodlands (`src/services/mockData.ts`)
-  - [x] Set up the RAG context generator (`src/services/ragContext.ts`)
-- [x] Backend API Endpoints (Next.js API Routes)
-  - [x] Implement AI Copilot API with Gemini and RAG context (`src/app/api/chat/route.ts`)
-  - [x] Implement Forecasting API (`src/app/api/forecast/route.ts`)
-  - [x] Implement Recommendations API (`src/app/api/recommendations/route.ts`)
-  - [x] Implement Alerts API (`src/app/api/alerts/route.ts`)
-- [x] UI / UX Components
-  - [x] Create Landing Page view (`src/components/LandingPage.tsx`)
-  - [x] Create Dashboard Header with persona selector (`src/components/DashboardHeader.tsx`)
-  - [x] Create Interactive Map (Leaflet map with Singapore coordinates and SVG fallback) (`src/components/InteractiveMap.tsx`)
-  - [x] Create KPI Metrics Grid (`src/components/KpiGrid.tsx`)
-  - [x] Create Analytics & Trends Charts (`src/components/AnalyticsCharts.tsx`)
-  - [x] Create AI Copilot chat & Explainability drawer (`src/components/CopilotPanel.tsx`)
-  - [x] Create Active Alerts & Recommendations component (`src/components/AlertsPanel.tsx`)
-  - [x] Create PDF Report compilation & printer (`src/components/ReportGenerator.tsx`)
-- [x] Page Integration & Styling
-  - [x] Configure main layout and page wrappers (`src/app/page.tsx`, `src/app/layout.tsx`)
-  - [x] Polish Glassmorphism and Dark/Light styles (`src/app/globals.css`)
+- [x] Location & Services Layer
+  - [x] Update Types (`src/types/index.ts`) with `UserLocation` and `LocationProvider` interfaces
+  - [x] Implement pluggable Location Services (`src/services/locationService.ts`) with Browser GPS, IP, Nominatim, and Manual Geocoding
+- [x] Telemetry & Grounding Updates
+  - [x] Refactor Mock Data (`src/services/mockData.ts`) to dynamically generate sub-regions (Downtown, Industrial, Residential, Tech Park) relative to user coordinates
+  - [x] Update RAG Context (`src/services/ragContext.ts`) to use dynamic coordinates and names
+- [x] Backend API Route Updates
+  - [x] Refactor Chat API (`src/app/api/chat/route.ts`) to ground Gemini in user coordinates, city, and dynamic sub-regions
+  - [x] Update Forecast, Alerts, and Recommendations APIs to filter by dynamic location
+- [x] UI / UX Refactoring
+  - [x] Create Location Status & Search Banner (`src/components/LocationBanner.tsx`)
+  - [x] Update Leaflet Map (`src/components/LeafletMap.tsx`) to show "You Are Here" marker and center on user coordinates
+  - [x] Update Report Compiler (`src/components/ReportGenerator.tsx`) to remove Singapore names and localize headings
+  - [x] Update main Dashboard Layout (`src/app/page.tsx`, `src/components/DashboardHeader.tsx`) to orchestrate geolocations
 - [x] Verification
   - [x] Run typescript checks (`npm run build`)
-  - [x] Manually verify pages and features
+  - [x] Verify Geolocation allowed/denied flows
   - [x] Generate walk-through report

@@ -1,158 +1,164 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { generateRAGContext } from '../../../services/ragContext';
-import { getSingaporeData } from '../../../services/mockData';
+import { getLocalizedData, getActiveAlerts, DEFAULT_LOCATION } from '../../../services/mockData';
+import { UserLocation } from '../../../types';
 
 export const runtime = 'nodejs';
 
-// Smart Local Heuristic Fallback
-const generateFallbackResponse = (query: string, regionId?: string, persona?: string) => {
-  const regions = getSingaporeData();
-  const contextText = generateRAGContext(regionId);
+// Smart Local Heuristic Fallback centered on dynamic location
+const generateFallbackResponse = (query: string, regionId?: string, persona?: string, location: UserLocation = DEFAULT_LOCATION) => {
+  const regions = getLocalizedData(location);
   const q = query.toLowerCase();
+
+  const cityName = location.city || 'Local Area';
+  const countryName = location.country || 'Global';
 
   let matchedRegion = regionId ? regions.find(r => r.id === regionId) : null;
   if (!matchedRegion) {
-    if (q.includes('jurong')) matchedRegion = regions.find(r => r.id === 'jurong') || null;
-    else if (q.includes('central') || q.includes('downtown')) matchedRegion = regions.find(r => r.id === 'central') || null;
-    else if (q.includes('woodlands') || q.includes('north')) matchedRegion = regions.find(r => r.id === 'woodlands') || null;
-    else if (q.includes('changi') || q.includes('east')) matchedRegion = regions.find(r => r.id === 'changi') || null;
+    if (q.includes('industrial') || q.includes('factory') || q.includes('pollut')) {
+      matchedRegion = regions.find(r => r.id === 'industrial') || null;
+    } else if (q.includes('downtown') || q.includes('center') || q.includes('cbd')) {
+      matchedRegion = regions.find(r => r.id === 'downtown') || null;
+    } else if (q.includes('residential') || q.includes('suburb') || q.includes('heat') || q.includes('temp')) {
+      matchedRegion = regions.find(r => r.id === 'residential') || null;
+    } else if (q.includes('tech') || q.includes('marina') || q.includes('coast') || q.includes('innovation')) {
+      matchedRegion = regions.find(r => r.id === 'innovation') || null;
+    }
   }
 
-  // Basic responses based on keywords
   let content = '';
-  let inputsUsed: string[] = ['All Regional Sensor Data'];
-  let reasoningSteps: string[] = ['Parsed user query keywords', 'Searched regional metric arrays'];
-  let evidence = 'Based on Singapore National Environmental sensor logs.';
+  let inputsUsed: string[] = [`${cityName} Grid Sensor Logs`];
+  let reasoningSteps: string[] = ['Parsed localized query strings', `Scanned ${cityName} telemetry database`];
+  let evidence = `Triggered baseline indicators for ${cityName}.`;
   let confidence = 0.90;
   let followUps: string[] = [];
 
-  if (q.includes('pollution') || q.includes('aqi') || q.includes('air') || (matchedRegion && matchedRegion.id === 'jurong')) {
-    const r = matchedRegion || regions.find(r => r.id === 'jurong')!;
-    inputsUsed = ['AQI Sensor Data', 'Citizen Odor Reports', 'Respiratory Clinic Admissions'];
+  const r = matchedRegion || regions[0];
+
+  if (q.includes('pollution') || q.includes('aqi') || q.includes('air') || (matchedRegion && matchedRegion.id === 'industrial')) {
+    inputsUsed = ['PM2.5 Sensor Data', 'Odor Complaint Registers', 'Clinic Asthmatic Admissions'];
     reasoningSteps = [
-      `Identified query intent: Air Quality analysis for ${r.name}`,
-      `Analyzed current AQI level (${r.aqi}) against NEA air quality index categories`,
-      `Checked active complaint logs for chemical odors or soot deposits`,
-      'Generated recommendations for air purification deployment and outdoor activity limits'
+      `Detected air quality query intent for ${r.name}`,
+      `Analyzed current localized AQI score (${r.aqi})`,
+      'Cross-checked active chemical odor logs',
+      'Correlated respiratory clinic demand'
     ];
-    evidence = `${r.name} is reporting an AQI of ${r.aqi}. Citizen complaints mention chemical odors and clinic visits for breathing issues.`;
-    confidence = r.id === 'jurong' ? 0.94 : 0.88;
+    evidence = `${r.name} is reporting an AQI level of ${r.aqi} with unresolved pollution complaints.`;
+    confidence = r.id === 'industrial' ? 0.93 : 0.88;
     
     content = `### Executive Summary
-In **${r.name}**, the Air Quality Index (AQI) is currently at **${r.aqi}**, which falls into the **${r.aqi > 100 ? 'Unhealthy' : 'Moderate'}** range. This is driven by elevated particulate matter concentrations, particularly near industrial facilities.
+In **${r.name}**, the Air Quality Index (AQI) is currently at **${r.aqi}**, which falls into the **${r.aqi > 100 ? 'Unhealthy' : 'Moderate'}** range. This is primarily caused by particulate concentration near industrial borders.
 
 ### Key Supporting Metrics
-* **Current AQI:** ${r.aqi} (Threshold limit: 100)
-* **Active Pollutant Complaints:** ${r.complaintsList.filter(c => c.category === 'pollution').length} unresolved reports
-* **Healthcare Demand:** ${r.healthcareDemand}% capacity utilized at local clinics
+* **Current AQI:** ${r.aqi} (Safety threshold: 100)
+* **Active Pollutant Reports:** ${r.complaintsList.filter(c => c.category === 'pollution').length} unresolved complaints
+* **Clinic Demand Rate:** ${r.healthcareDemand}% of baseline capacity
 
 ### Actionable Recommendations
-1. **Deploy Air Purification Units:** Mobilize remaining standby air scrubbing grids to Boon Lay residential estates immediately.
-2. **Issue Health Advisory:** Advise schools and community centers in the west to suspend all outdoor physical activities until the AQI falls below 100.
-3. **Audit Industrial Stack Filters:** Initiate an unscheduled compliance check on the nearby manufacturing plants.`;
+1. **Orchestrate Air Purifiers:** Mobilize mobile air scrubbing grids to residential areas near the industrial zone immediately.
+2. **Issue Health Advisory:** Suspend outdoor sports in municipal schools in the local sector until AQI stabilizes below 100.
+3. **Audit Emissions:** Deploy inspector teams to check industrial stack filtrations.`;
 
     followUps = [
-      `What are the specific chemical odor complaints in ${r.name}?`,
+      `What complaints are unresolved in ${r.name}?`,
       `Show me the 24-hour AQI history trend for ${r.name}.`,
-      `What air purification assets are currently active in ${r.name}?`
+      `What resources are deployed in ${r.name}?`
     ];
 
-  } else if (q.includes('heat') || q.includes('temp') || q.includes('weather') || (matchedRegion && matchedRegion.id === 'woodlands')) {
-    const r = matchedRegion || regions.find(r => r.id === 'woodlands')!;
-    inputsUsed = ['Ambient Temperature Sensors', 'Age-Demographic Distribution Data', 'Heat Stroke Hospitalization Logs'];
+  } else if (q.includes('heat') || q.includes('temp') || q.includes('weather') || (matchedRegion && matchedRegion.id === 'residential')) {
+    inputsUsed = ['Thermal Discomfort Array', 'Senior Demographic Distribution', 'Heat Exhaustion ER Records'];
     reasoningSteps = [
-      `Detected query intent: Extreme heat risk assessment for ${r.name}`,
+      `Detected thermal index query intent for ${r.name}`,
       `Read local temperature (${r.temperature.toFixed(1)}°C) and relative humidity (${r.humidity}%)`,
-      'Evaluated heat index danger threshold',
-      'Correlated high vulnerability index (elderly clusters) with resource availability'
+      'Calculated local apparent heat index',
+      'Analyzed senior citizen population vulnerability'
     ];
-    evidence = `${r.name} has a temperature of ${r.temperature.toFixed(1)}°C with high humidity (${r.humidity}%), posing a severe threat to elderly residents.`;
+    evidence = `${r.name} temperature is elevated at ${r.temperature.toFixed(1)}°C with high relative humidity (${r.humidity}%), creating heat-related health hazards.`;
     confidence = 0.91;
 
     content = `### Executive Summary
-**${r.name}** is experiencing high thermal stress, with temperatures reaching **${r.temperature.toFixed(1)}°C** and relative humidity at **${r.humidity}%**. Combined, this creates an apparent heat index exceeding 38°C, which poses heat exhaustion risks, especially for the high density of elderly residents in the area.
+**${r.name}** is experiencing high thermal stress, with temperature reading at **${r.temperature.toFixed(1)}°C** and humidity at **${r.humidity}%**. This creates an apparent heat index exceeding 37°C, which poses heat exhaustion risks, especially for elderly clusters in the sector.
 
 ### Key Supporting Metrics
-* **Temperature:** ${r.temperature.toFixed(1)}°C (Singapore normal average: 31°C)
+* **Temperature:** ${r.temperature.toFixed(1)}°C (Regional average: 31°C)
 * **Humidity:** ${r.humidity}%
-* **Elderly Vulnerability Index:** High (Block 801-815 clusters)
-* **Clinic Capacity Load:** ${r.healthcareDemand}%
+* **Elderly Vulnerability Index:** High (critical residential blocks)
+* **Healthcare Demand:** ${r.healthcareDemand}% capacity utilized
 
 ### Actionable Recommendations
-1. **Activate Community Cooling Shelters:** Ensure all air-conditioned rooms at Woodlands Community Club are fully operational and open 24/7.
-2. **Distribute Hydration Packs:** Deploy volunteer networks to distribute electrolytes and water to non-airconditioned rental flats.
-3. **Broaden Public Advisory:** Issue warning broadcasts via SMS cell-broadcasting targeting northern residential sectors.`;
+1. **Activate Community Cooling Shelters:** Ensure public, air-conditioned cooling centers are open 24/7.
+2. **Deploy Hydration Volunteers:** Send volunteers to hand out water and check on isolated seniors.
+3. **Broadcast Warning Alert:** Send cell-broadcast notifications to citizens in the residential sector.`;
 
     followUps = [
       `Where are the cooling shelters located in ${r.name}?`,
-      `How does the temperature in ${r.name} compare to Changi?`,
-      `Is the healthcare demand in ${r.name} rising?`
+      `Compare the temperature in ${r.name} to other sectors.`,
+      `Are there active medical teams in ${r.name}?`
     ];
 
-  } else if (q.includes('traffic') || q.includes('congestion') || q.includes('jam') || (matchedRegion && matchedRegion.id === 'central')) {
-    const r = matchedRegion || regions.find(r => r.id === 'central')!;
-    inputsUsed = ['Inductive Loop Traffic Sensors', 'CCTV Vehicle Feeds', 'Bus Delay Logs'];
+  } else if (q.includes('traffic') || q.includes('congestion') || q.includes('jam') || (matchedRegion && matchedRegion.id === 'downtown')) {
+    inputsUsed = ['Loop Sensor Congestion Data', 'Municipal Transit Feeds', 'Commuter Delay Reports'];
     reasoningSteps = [
-      'Identified query intent: Traffic flow and congestion mapping',
-      `Queried Central Area traffic grid congestion level (${r.trafficCongestion}%)`,
-      'Analyzed active incident logs for breakdowns or road work',
-      'Generated detour routing and signal timing adjustments'
+      `Detected traffic gridlock query intent for ${r.name}`,
+      `Analyzed traffic congestion coefficient (${r.trafficCongestion}%)`,
+      'Checked active incidents for lane blockages or breakdowns',
+      'Calculated public transport arrival delays'
     ];
-    evidence = `Downtown Central Area is reporting ${r.trafficCongestion}% congestion with gridlock reported near Marina Blvd.`;
-    confidence = 0.95;
+    evidence = `${r.name} is reporting heavy traffic congestion (${r.trafficCongestion}%) with major delays on primary roads.`;
+    confidence = 0.94;
 
     content = `### Executive Summary
-The **${r.name}** is currently experiencing major traffic bottlenecks, with congestion running at **${r.trafficCongestion}%**. This is causing substantial delays on primary arterials, notably around Shenton Way and Marina Boulevard, primarily due to peak transit volume and a lane blockage.
+The **${r.name}** is currently experiencing major traffic bottlenecks, with congestion running at **${r.trafficCongestion}%**. This is causing substantial delays on primary roads, primarily due to peak transit volume and an active road blockage.
 
 ### Key Supporting Metrics
-* **Congestion Rate:** ${r.trafficCongestion}% (Normal: <50%)
-* **Bus Delay Average:** +22 minutes
-* **Active Incidents:** Lane blockage reported near Marina Bay Sands linkway
+* **Congestion Rate:** ${r.trafficCongestion}% (Normal limit: 50%)
+* **Bus Delay Average:** +20 minutes
+* **Active Incidents:** Lane blockage reported near central business district
 
 ### Actionable Recommendations
-1. **Optimize Signal Phasing:** Implement dynamic green-light extensions along Shenton Way exit routes to clear vehicle queues.
-2. **Dynamic Diversions:** Broadcast real-time navigation alerts advising drivers to bypass the Central Boulevard corridor.
-3. **Deploy Auxiliary Traffic Police:** Station officers at major gridlocked intersections to manually manage vehicle flows.`;
+1. **Optimize Signal Phasing:** Implement dynamic green-light extensions along exit corridors to clear queues.
+2. **Broadcast Diversions:** Advise drivers via navigation APIs to bypass the central corridor.
+3. **Deploy Traffic Patrols:** Station auxiliary officers at main intersections to manage traffic flow.`;
 
     followUps = [
-      `What is causing the lane blockage in the ${r.name}?`,
-      `Are there any active traffic patrol units near Marina Boulevard?`,
-      `Compare the traffic congestion between Central Area and Woodlands.`
+      `What is causing the lane blockage in ${r.name}?`,
+      `Are there traffic patrol units active in ${r.name}?`,
+      `Compare traffic congestion across all sectors of ${cityName}.`
     ];
 
   } else {
-    // General Singapore Status
-    inputsUsed = ['All Regional Metrics', 'Singapore Sensor Registry', 'Active System Alerts'];
+    // General localized status
+    inputsUsed = ['All Sector Sensor Telemetry', 'Active Anomaly Triggers', 'Citizen Complaint Dashboard'];
     reasoningSteps = [
-      'Detected general inquiry / situation overview',
-      'Analyzed all 4 Singapore regions for threshold breaches',
-      'Aggregated active system alerts and resource availability'
+      `Detected generalized operations query for ${cityName}`,
+      'Scanned all four local sub-regions for warning thresholds',
+      'Aggregated active emergency alerts'
     ];
-    evidence = `Out of 4 regions, Jurong has high AQI (${regions.find(r => r.id === 'jurong')?.aqi}) and Woodlands has high temperature (${regions.find(r => r.id === 'woodlands')?.temperature}°C).`;
-    confidence = 0.89;
+    evidence = `Analyzing ${cityName} telemetry. Jurong/Industrial AQI is at ${regions.find(rg => rg.id === 'industrial')?.aqi}. Residential Temp is at ${regions.find(rg => rg.id === 'residential')?.temperature.toFixed(1)}°C.`;
+    confidence = 0.90;
 
     content = `### Executive Summary
-Singapore's urban status shows two localized concerns that require immediate attention:
-1. **Air Quality in Jurong Industrial Area:** AQI has surged to **${regions.find(r => r.id === 'jurong')?.aqi}** (Unhealthy).
-2. **Thermal Discomfort in Woodlands:** Temperature is elevated at **${regions.find(r => r.id === 'woodlands')?.temperature.toFixed(1)}°C** with high healthcare demand.
+The operations status for **${cityName}** shows two localized areas that require immediate attention:
+1. **Air Quality in the Industrial Zone:** AQI is elevated at **${regions.find(rg => rg.id === 'industrial')?.aqi}** (Unhealthy).
+2. **Thermal Discomfort in the Residential Zone:** Temperature is high at **${regions.find(rg => rg.id === 'residential')?.temperature.toFixed(1)}°C** with saturated healthcare demand.
 
-Downtown and Changi remain within safe environmental margins.
+Downtown and Innovation/Waterfront sectors remain within safe operational baselines.
 
 ### Key Supporting Metrics
-* **Total Monitored Zones:** 4
-* **Zones at Elevated Risk:** 2 (Jurong: High AQI, Woodlands: Heat Risk)
-* **Total Active Alerts:** ${regions.map(r => (r.aqi > 100 || r.temperature > 34 ? 1 : 0) as number).reduce((a, b) => a + b, 0)} critical/warning states
+* **Monitored Sectors:** 4
+* **Sectors with Active Warnings:** 2
+* **Total System Alerts:** ${regions.map(rg => rg.aqi > 100 || rg.temperature > 34 ? 1 : 0 as number).reduce((a, b) => a + b, 0)} active alerts
 
 ### Actionable Recommendations
-1. **Deploy West-Zone Air Filters:** Shift air purification trailers towards Boon Lay housing blocks.
-2. **Open North-Zone Cooling Hubs:** Open air-conditioned sections of woodlands community clubs for elderly residents.
-3. **Monitor Central Area Traffic:** Prepare for peak transit congestion in the central business district.`;
+1. **Orchestrate Air Filters:** Shift air purification grids to residential zones bordering the industrial sector.
+2. **Open Cooling Facilities:** Activate air-conditioned community shelters in the residential suburb.
+3. **Monitor Downtown Traffic:** Prepare for peak traffic congestion in the central area.`;
 
     followUps = [
-      'Which areas have the highest healthcare demand today?',
-      'Show me a summary of all active alerts in Singapore.',
-      'Generate a daily situation report for the City Administrator.'
+      `Which areas of ${cityName} have the highest risk scores today?`,
+      `Show me a summary of all active alerts in ${cityName}.`,
+      `Generate a daily operations report for ${cityName}.`
     ];
   }
 
@@ -171,7 +177,7 @@ Downtown and Changi remain within safe environmental margins.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, regionId, persona } = body;
+    const { messages, regionId, persona, userLocation } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Invalid messages array' }, { status: 400 });
@@ -180,29 +186,33 @@ export async function POST(req: NextRequest) {
     const lastUserMessage = messages[messages.length - 1].content;
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // Retrieve full system data to build the RAG context
-    const ragContext = generateRAGContext(regionId);
+    // Use geolocated context or fallback to default
+    const activeLocation: UserLocation = userLocation || DEFAULT_LOCATION;
+    const ragContext = generateRAGContext(regionId, activeLocation);
 
-    // Heuristic Check: If API key is missing, immediately use the smart fallback
+    const cityName = activeLocation.city || 'Local Area';
+    const countryName = activeLocation.country || 'Global';
+
+    // Heuristic Check: If API key is missing, immediately use the smart fallback geolocated to the user's city
     if (!apiKey) {
-      const fallback = generateFallbackResponse(lastUserMessage, regionId, persona);
+      const fallback = generateFallbackResponse(lastUserMessage, regionId, persona, activeLocation);
       return NextResponse.json(fallback);
     }
 
     // Call Gemini API via @google/genai
     const ai = new GoogleGenAI({ apiKey });
     
-    const systemPrompt = `You are "PulseCopilot", the expert Decision Intelligence AI assistant for the CommunityPulse AI platform in Singapore.
-Your user is a "${persona || 'citizen'}" who is exploring urban metrics, environmental risks, and recommendations.
+    const systemPrompt = `You are "PulseCopilot", the expert Decision Intelligence AI assistant for the CommunityPulse AI platform in ${cityName}, ${countryName}.
+Your user is a "${persona || 'citizen'}" who is exploring local urban telemetry, environmental risks, and municipal recommendations.
 
-Here is the retrieved real-time context of Singapore (air quality, traffic, temperature, citizen complaints, and active resource deployments):
+Here is the retrieved real-time context of the user's location (${cityName}, ${countryName}), detailing regional air quality, traffic, temperature, citizen complaints, and active resource deployments:
 ---
 ${ragContext}
 ---
 
 Your response MUST be returned STRICTLY as a JSON object matching this schema:
 {
-  "content": "A detailed, professional response formatted in Markdown. Structure it using: ### Executive Summary, ### Key Supporting Metrics, and ### Actionable Recommendations. Use bullet points and bold text for readability. Base your findings strictly on the context data above.",
+  "content": "A detailed, professional response formatted in Markdown. Structure it using: ### Executive Summary, ### Key Supporting Metrics, and ### Actionable Recommendations. Use bullet points and bold text for readability. Base your findings strictly on the context data above. Address findings with respect to ${cityName}.",
   "explainability": {
     "confidence": 0.95, // Float between 0.0 and 1.0 representing your assessment of data completeness and predictive reliability
     "inputsUsed": ["Input 1", "Input 2"], // Array of strings representing which specific metrics or complaints from the context influenced this response
@@ -216,12 +226,12 @@ Your response MUST be returned STRICTLY as a JSON object matching this schema:
 }
 
 DO NOT include any markdown code block wrapper (like \`\`\`json) in your raw output. Output ONLY the raw JSON string.
-Rely strictly on the observations in the provided context. If a user asks for predictions, refer to the trends or note that predictions are models based on seasonal inputs. Do not hallucinate data that is not in the context.`;
+Rely strictly on the observations in the provided context. Address only the user's active region and city (${cityName}). Do not hallucinate Singapore-specific details unless the user is in Singapore.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
-        { role: 'user', parts: [{ text: systemPrompt + `\n\nUser query: "${lastUserMessage}"\nSelected Region context: ${regionId || 'All Regions'}` }] }
+        { role: 'user', parts: [{ text: systemPrompt + `\n\nUser query: "${lastUserMessage}"\nSelected Region: ${regionId || 'All Regions'}` }] }
       ],
       config: {
         responseMimeType: 'application/json'
@@ -233,23 +243,22 @@ Rely strictly on the observations in the provided context. If a user asks for pr
       throw new Error('Empty response from Gemini API');
     }
 
-    // Parse the JSON output from Gemini
     const resultJson = JSON.parse(responseText.trim());
     return NextResponse.json(resultJson);
 
   } catch (error: any) {
-    console.error('Gemini API Error, falling back to local heuristic:', error);
+    console.error('Gemini API Error, falling back to localized heuristic:', error);
     
-    // In case of error (e.g. invalid key or format mismatch), fallback safely
     try {
       const body = await req.json().catch(() => ({}));
-      const { messages, regionId, persona } = body;
+      const { messages, regionId, persona, userLocation } = body;
       const lastUserMessage = messages && messages.length > 0 ? messages[messages.length - 1].content : 'summarize';
-      const fallback = generateFallbackResponse(lastUserMessage, regionId, persona);
+      const activeLocation = userLocation || DEFAULT_LOCATION;
+      const fallback = generateFallbackResponse(lastUserMessage, regionId, persona, activeLocation);
       return NextResponse.json(fallback);
     } catch (fallbackErr) {
       return NextResponse.json({
-        content: `### Executive Summary\nThe system encountered an error connecting to the AI service, but regional monitoring remains active. Please ensure your \`GEMINI_API_KEY\` is configured in your environment.\n\n### Current Recommendations\n1. Check network connectivity.\n2. Review system logs for detailed error reports.`,
+        content: `### Executive Summary\nThe system encountered an error connecting to the AI service, but local monitoring remains active. Please ensure your \`GEMINI_API_KEY\` is configured in your environment.\n\n### Current Recommendations\n1. Check network connectivity.\n2. Review system logs for detailed error reports.`,
         explainability: {
           confidence: 0.5,
           inputsUsed: ['System Status Log'],

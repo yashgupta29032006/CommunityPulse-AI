@@ -88,3 +88,13 @@ export interface ChatMessage {
 }
 
 export type UserPersona = 'citizen' | 'ngo' | 'admin';
+
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
+  country: string;
+  state?: string;
+  city?: string;
+  locality?: string;
+  displayName?: string;
+}

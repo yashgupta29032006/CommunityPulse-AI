@@ -1,11 +1,16 @@
-import { getSingaporeData, getActiveAlerts, getStaticRecommendations } from './mockData';
+import { getLocalizedData, getActiveAlerts, getStaticRecommendations, DEFAULT_LOCATION } from './mockData';
+import { UserLocation } from '../types';
 
-export const generateRAGContext = (selectedRegionId?: string): string => {
-  const regions = getSingaporeData();
+export const generateRAGContext = (selectedRegionId?: string, location: UserLocation = DEFAULT_LOCATION): string => {
+  const regions = getLocalizedData(location);
   const alerts = getActiveAlerts(regions);
   
-  let context = `## CURRENT SYSTEM STATUS (SINGAPORE)
-Generated at: ${new Date().toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })}
+  const cityName = location.city || 'Local Area';
+  const countryName = location.country || 'Global';
+
+  let context = `## CURRENT SYSTEM STATUS (${cityName.toUpperCase()}, ${countryName.toUpperCase()})
+Location Center: Lat=${location.latitude.toFixed(4)}, Lng=${location.longitude.toFixed(4)}
+Generated at: ${new Date().toLocaleString()}
 Total Regions Monitored: ${regions.length}
 Active Critical Alerts: ${alerts.filter(a => a.severity === 'critical').length}
 Active Warning Alerts: ${alerts.filter(a => a.severity === 'warning').length}
@@ -85,7 +90,7 @@ ${region.complaintsList.length > 0
       context += `- [${alert.severity.toUpperCase()}] **${alert.regionName}** (${alert.type.toUpperCase()}): ${alert.message} *Recommended Action:* ${alert.suggestedAction}\n`;
     });
   } else {
-    context += 'No active critical or warning alerts detected across Singapore.\n';
+    context += `No active critical or warning alerts detected across ${cityName}.\n`;
   }
 
   // Add predefined AI recommendations for grounding
